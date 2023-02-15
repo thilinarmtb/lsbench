@@ -92,7 +92,11 @@ struct csr *cholbench_read(const char *fname) {
 }
 
 void cholbench_bench(struct csr *A, unsigned solver, unsigned ntrials) {
-  double *x = tcalloc(double, A->nrows), *r = tcalloc(double, A->nrows);
+  unsigned m = A->nrows;
+  double *x = tcalloc(double, m), *r = tcalloc(double, m);
+
+  for (unsigned i = 0; i < m; i++)
+    r[i] = i;
 
   switch (solver) {
   case 0:
