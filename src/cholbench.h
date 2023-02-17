@@ -5,12 +5,25 @@
 extern "C" {
 #endif
 
-struct csr;
+typedef enum { CHOLBENCH_SOLVER_CUSOLVER = 0 } cholbench_solver_t;
 
-struct csr *cholbench_read(const char *fname);
-void cholbench_bench(struct csr *A, unsigned solver, unsigned ntrials);
-void cholbench_print(const struct csr *A);
-void cholbench_free(struct csr *A);
+typedef enum {
+  CHOLBENCH_ORDERING_NONE = -1,
+  CHOLBENCH_ORDERING_RCM = 0,
+  CHOLBENCH_ORDERING_AMD = 1
+} cholbench_ordering_t;
+
+struct cholbench;
+struct cholbench *cholbench_init(int argc, char *argv[]);
+
+struct csr;
+struct csr *cholbench_matrix_read(const struct cholbench *cb);
+void cholbench_matrix_print(const struct csr *A);
+void cholbench_matrix_free(struct csr *A);
+
+void cholbench_bench(struct csr *A, const struct cholbench *cb);
+
+void cholbench_finalize(struct cholbench *cb);
 
 #ifdef _cplusplus
 }

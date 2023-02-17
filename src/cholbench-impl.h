@@ -8,6 +8,13 @@
 extern "C" {
 #endif
 
+struct cholbench {
+  char *matrix;
+  cholbench_solver_t solver;
+  cholbench_ordering_t ordering;
+  unsigned verbose, trials;
+};
+
 struct csr {
   unsigned nrows, base;
   unsigned *offs, *cols;
@@ -26,7 +33,7 @@ static inline void sfree(void *p, const char *file, unsigned line) {
 int cusparse_init();
 int cusparse_finalize();
 void cusparse_bench(double *x, struct csr *A, const double *r,
-                    unsigned ntrials);
+                    const struct cholbench *cb);
 
 #ifdef _cplusplus
 }

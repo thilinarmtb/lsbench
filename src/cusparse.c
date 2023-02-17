@@ -4,6 +4,7 @@
 #include <cusparse.h>
 #include <err.h>
 #include <stdio.h>
+#include <time.h>
 
 #define chk_solver(err)                                                        \
   {                                                                            \
@@ -114,28 +115,37 @@ int cusparse_finalize() {
 }
 
 void cusparse_bench(double *x, struct csr *A, const double *r,
-                    unsigned ntrials) {
+                    const struct cholbench *cb) {
   csr_init(A);
 
-  unsigned m = A->nrows, nnz = A->offs[m];
+  unsigned m = A->nrows;
   double *d_r, *d_x;
   chk_rt(cudaMalloc((void **)&d_r, m * sizeof(double)));
   chk_rt(cudaMalloc((void **)&d_x, m * sizeof(double)));
 
   chk_rt(cudaMemcpy(d_r, r, m * sizeof(double), cudaMemcpyHostToDevice));
 
-  struct cusparse_csr *B = (struct cusparse_csr *)A->ptr;
   int singularity = 0;
-  for (unsigned i = 0; i < ntrials; i++) {
+  unsigned nnz = A->offs[m];
+  struct cusparse_csr *B = (struct cusparse_csr *)A->ptr;
+
+  clock_t t = clock();
+  chk_rt(cudaDeviceSynchronize());
+  for (unsigned i = 0; i < cb->trials; i++) {
     chk_solver(cusolverSpDcsrlsvchol(solver, m, nnz, B->M, B->d_val, B->d_off,
                                      B->d_col, d_r, 1e-10, 0, d_x,
                                      &singularity));
-    chk_rt(cudaDeviceSynchronize());
   }
+  chk_rt(cudaDeviceSynchronize());
+  t = clock() - t;
 
   chk_rt(cudaMemcpy(x, d_x, m * sizeof(double), cudaMemcpyDeviceToHost));
   chk_rt(cudaFree(d_r));
   chk_rt(cudaFree(d_x));
+
+  printf("===matrix,n,nnz,trials,solver,ordering,elapsed===\n");
+  printf("%s,%u,%u,%u,%u,%d,%.15lf\n", cb->matrix, m, nnz, cb->trials,
+         cb->solver, cb->ordering, (double)t / CLOCKS_PER_SEC);
 
   csr_finalize(A);
 }

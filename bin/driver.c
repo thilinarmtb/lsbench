@@ -3,9 +3,13 @@
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-  struct csr *A = cholbench_read(argv[1]);
-  cholbench_print(A);
-  cholbench_bench(A, 0, 1);
-  cholbench_free(A);
+  struct cholbench *cb = cholbench_init(argc, argv);
+
+  struct csr *A = cholbench_matrix_read(cb);
+  cholbench_bench(A, cb);
+  cholbench_matrix_free(A);
+
+  cholbench_finalize(cb);
+
   return 0;
 }
