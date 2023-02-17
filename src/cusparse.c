@@ -39,11 +39,11 @@ static cusparseIndexBase_t index_base[2] = {CUSPARSE_INDEX_BASE_ZERO,
 
 struct cusparse_csr {
   cusparseMatDescr_t M;
-  int *d_off, *d_col;
-  double *d_val;
+  int *d_off, *d_col, *h_off, *h_col, *h_Q;
+  double *d_val, *h_val;
 };
 
-static void csr_init(struct csr *A) {
+static void csr_init(struct csr *A, const struct cholbench *cb) {
   struct cusparse_csr *B = tcalloc(struct cusparse_csr, 1);
 
   // Create desrciptor for M.
@@ -53,24 +53,72 @@ static void csr_init(struct csr *A) {
 
   unsigned m = A->nrows, nnz = A->offs[m];
   // unsigned -> int since cusolver only likes ints.
-  int *offs = tcalloc(int, m + 1);
+  int *h_off = tcalloc(int, m + 1);
   for (unsigned i = 0; i < m + 1; i++)
-    offs[i] = A->offs[i] + A->base;
-  chk_rt(cudaMalloc((void **)&B->d_off, (m + 1) * sizeof(int)));
-  chk_rt(cudaMemcpy(B->d_off, offs, (m + 1) * sizeof(int),
-                    cudaMemcpyHostToDevice));
-  tfree(offs);
+    h_off[i] = A->offs[i] + A->base;
 
-  int *cols = tcalloc(int, nnz);
+  int *h_col = tcalloc(int, nnz);
   for (unsigned i = 0; i < nnz; i++)
-    cols[i] = A->cols[i];
-  chk_rt(cudaMalloc((void **)&B->d_col, nnz * sizeof(int)));
-  chk_rt(cudaMemcpy(B->d_col, cols, nnz * sizeof(int), cudaMemcpyHostToDevice));
+    h_col[i] = A->cols[i];
 
-  chk_rt(cudaMalloc((void **)&B->d_val, nnz * sizeof(double)));
-  chk_rt(cudaMemcpy(B->d_val, A->vals, nnz * sizeof(double),
+  // Find a reordering to minimize fill-in.
+  B->h_Q = tcalloc(int, m);
+  switch (cb->ordering) {
+  case CHOLBENCH_ORDERING_RCM:
+    chk_solver(
+        cusolverSpXcsrsymrcmHost(solver, m, nnz, B->M, h_off, h_col, B->h_Q));
+    break;
+  case CHOLBENCH_ORDERING_AMD:
+    chk_solver(
+        cusolverSpXcsrsymamdHost(solver, m, nnz, B->M, h_off, h_col, B->h_Q));
+    break;
+  case CHOLBENCH_ORDERING_METIS:
+    chk_solver(cusolverSpXcsrmetisndHost(solver, m, nnz, B->M, h_off, h_col,
+                                         NULL, B->h_Q));
+    break;
+  case CHOLBENCH_ORDERING_NONE:
+    for (unsigned i = 0; i < m; i++)
+      B->h_Q[i] = i;
+  default:
+    break;
+  }
+
+  size_t bfr_size = 0;
+  chk_solver(cusolverSpXcsrperm_bufferSizeHost(
+      solver, m, m, nnz, B->M, h_off, h_col, B->h_Q, B->h_Q, &bfr_size));
+
+  char *bfr = tcalloc(char, bfr_size);
+  int *map = tcalloc(int, nnz);
+  for (unsigned i = 0; i < nnz; i++)
+    map[i] = i;
+  chk_solver(cusolverSpXcsrpermHost(solver, m, m, nnz, B->M, h_off, h_col,
+                                    B->h_Q, B->h_Q, map, (void *)bfr));
+  tfree(bfr);
+
+  // Reorder the matrix now.
+  B->h_off = tcalloc(int, m + 1);
+  for (unsigned i = 0; i < m + 1; i++)
+    B->h_off[i] = h_off[i];
+  chk_rt(cudaMalloc((void **)&B->d_off, (m + 1) * sizeof(int)));
+  chk_rt(cudaMemcpy(B->d_off, B->h_off, (m + 1) * sizeof(int),
                     cudaMemcpyHostToDevice));
-  tfree(cols);
+  tfree(h_off);
+
+  B->h_col = tcalloc(int, nnz);
+  for (unsigned i = 0; i < nnz; i++)
+    B->h_col[i] = h_col[i];
+  chk_rt(cudaMalloc((void **)&B->d_col, nnz * sizeof(int)));
+  chk_rt(cudaMemcpy(B->d_col, B->h_col, nnz * sizeof(int),
+                    cudaMemcpyHostToDevice));
+  tfree(h_col);
+
+  B->h_val = tcalloc(double, nnz);
+  for (unsigned i = 0; i < nnz; i++)
+    B->h_val[i] = A->vals[map[i]];
+  chk_rt(cudaMalloc((void **)&B->d_val, nnz * sizeof(double)));
+  chk_rt(cudaMemcpy(B->d_val, B->h_val, nnz * sizeof(double),
+                    cudaMemcpyHostToDevice));
+  tfree(map);
 
   A->ptr = (void *)B;
 }
@@ -82,6 +130,7 @@ static void csr_finalize(struct csr *A) {
     chk_rt(cudaFree(B->d_off));
     chk_rt(cudaFree(B->d_col));
     chk_rt(cudaFree(B->d_val));
+    tfree(B->h_Q), tfree(B->h_off), tfree(B->h_col), tfree(B->h_val);
   }
 
   tfree(B), A->ptr = NULL;
@@ -116,21 +165,31 @@ int cusparse_finalize() {
 
 void cusparse_bench(double *x, struct csr *A, const double *r,
                     const struct cholbench *cb) {
-  csr_init(A);
+  csr_init(A, cb);
 
-  unsigned m = A->nrows;
+  unsigned m = A->nrows, nnz = A->offs[m];
+  struct cusparse_csr *B = (struct cusparse_csr *)A->ptr;
+
   double *d_r, *d_x;
   chk_rt(cudaMalloc((void **)&d_r, m * sizeof(double)));
   chk_rt(cudaMalloc((void **)&d_x, m * sizeof(double)));
 
-  chk_rt(cudaMemcpy(d_r, r, m * sizeof(double), cudaMemcpyHostToDevice));
+  double *tmp = tcalloc(double, m);
+  for (unsigned i = 0; i < m; i++)
+    tmp[i] = r[B->h_Q[i]];
+  chk_rt(cudaMemcpy(d_r, tmp, m * sizeof(double), cudaMemcpyHostToDevice));
 
+  // Warmup
   int singularity = 0;
-  unsigned nnz = A->offs[m];
-  struct cusparse_csr *B = (struct cusparse_csr *)A->ptr;
+  for (unsigned i = 0; i < cb->trials; i++) {
+    chk_solver(cusolverSpDcsrlsvchol(solver, m, nnz, B->M, B->d_val, B->d_off,
+                                     B->d_col, d_r, 1e-10, 0, d_x,
+                                     &singularity));
+  }
 
-  clock_t t = clock();
+  // Time the solve
   chk_rt(cudaDeviceSynchronize());
+  clock_t t = clock();
   for (unsigned i = 0; i < cb->trials; i++) {
     chk_solver(cusolverSpDcsrlsvchol(solver, m, nnz, B->M, B->d_val, B->d_off,
                                      B->d_col, d_r, 1e-10, 0, d_x,
@@ -139,9 +198,13 @@ void cusparse_bench(double *x, struct csr *A, const double *r,
   chk_rt(cudaDeviceSynchronize());
   t = clock() - t;
 
-  chk_rt(cudaMemcpy(x, d_x, m * sizeof(double), cudaMemcpyDeviceToHost));
+  chk_rt(cudaMemcpy(tmp, d_x, m * sizeof(double), cudaMemcpyDeviceToHost));
   chk_rt(cudaFree(d_r));
   chk_rt(cudaFree(d_x));
+
+  for (unsigned i = 0; i < m; i++)
+    x[B->h_Q[i]] = tmp[i];
+  tfree(tmp);
 
   printf("===matrix,n,nnz,trials,solver,ordering,elapsed===\n");
   printf("%s,%u,%u,%u,%u,%d,%.15lf\n", cb->matrix, m, nnz, cb->trials,

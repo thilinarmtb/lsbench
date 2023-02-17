@@ -8,9 +8,16 @@ extern "C" {
 typedef enum { CHOLBENCH_SOLVER_CUSOLVER = 0 } cholbench_solver_t;
 
 typedef enum {
+  CHOLBENCH_PRECISION_FP64 = 0,
+  CHOLBENCH_PRECISION_FP32 = 1,
+  CHOLBENCH_PRECISION_FP16 = 2
+} cholbench_precision_t;
+
+typedef enum {
   CHOLBENCH_ORDERING_NONE = -1,
   CHOLBENCH_ORDERING_RCM = 0,
-  CHOLBENCH_ORDERING_AMD = 1
+  CHOLBENCH_ORDERING_AMD = 1,
+  CHOLBENCH_ORDERING_METIS = 2
 } cholbench_ordering_t;
 
 struct cholbench;

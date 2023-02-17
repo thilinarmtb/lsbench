@@ -12,6 +12,7 @@ struct cholbench {
   char *matrix;
   cholbench_solver_t solver;
   cholbench_ordering_t ordering;
+  cholbench_precision_t precision;
   unsigned verbose, trials;
 };
 

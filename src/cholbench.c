@@ -1,58 +1,136 @@
 #include "cholbench-impl.h"
 #include <assert.h>
+#include <ctype.h>
 #include <err.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+static void str_to_upper(char *up, const char *str) {
+  size_t n = strnlen(str, BUFSIZ);
+  for (unsigned i = 0; i < n; i++)
+    up[i] = toupper(str[i]);
+  up[n] = '\0';
+}
+
+static cholbench_solver_t str_to_solver(const char *str) {
+  char up[BUFSIZ];
+  str_to_upper(up, str);
+
+  if (strcmp(up, "CUSOLVER") == 0) {
+    return CHOLBENCH_SOLVER_CUSOLVER;
+  } else {
+    warnx("Invalid solver: \"%s\". Defaulting to CUSOLVER.", str);
+    return CHOLBENCH_SOLVER_CUSOLVER;
+  }
+}
+
+static cholbench_ordering_t str_to_ordering(const char *str) {
+  char up[BUFSIZ];
+  str_to_upper(up, str);
+
+  if (strcmp(up, "RCM") == 0) {
+    return CHOLBENCH_ORDERING_RCM;
+  } else if (strcmp(up, "AMD") == 0) {
+    return CHOLBENCH_ORDERING_AMD;
+  } else if (strcmp(up, "METIS") == 0) {
+    return CHOLBENCH_ORDERING_METIS;
+  } else {
+    warnx("Invalid ordering: \"%s\". Defaulting to no ordering.", str);
+    return CHOLBENCH_ORDERING_NONE;
+  }
+}
+
+static cholbench_precision_t str_to_precision(const char *str) {
+  char up[BUFSIZ];
+  str_to_upper(up, str);
+
+  if (strcmp(up, "FP64") == 0) {
+    return CHOLBENCH_PRECISION_FP64;
+  } else if (strcmp(up, "FP32") == 0) {
+    return CHOLBENCH_PRECISION_FP32;
+  } else if (strcmp(up, "FP16") == 0) {
+    return CHOLBENCH_PRECISION_FP16;
+  } else {
+    warnx("Invalid precision: \"%s\". Defaulting to FP64.", str);
+    return CHOLBENCH_PRECISION_FP64;
+  }
+}
+
+static void print_help(int argc, char *argv[]) {
+  printf("Usage: %s [OPTIONS]\n");
+  printf("Options:\n");
+  printf("  --matrix <FILE>\n");
+  printf("  --solver <SOLVER>, Values: cusolver\n");
+  printf("  --ordering <ORDERING>, Values: RCM, AMD, METIS\n");
+  printf("  --precision <PRECISION>, Values: FP64, FP32, FP16\n");
+  printf("  --verbose <VERBOSITY>, Values: 0, 1, 2, ...\n");
+  printf("  --trials <TRIALS>, Values: 1, 2, ...\n");
+  printf("  --help\n");
+}
+
 struct cholbench *cholbench_init(int argc, char *argv[]) {
-  struct option long_options[] = {{"matrix", required_argument, 0, 0},
-                                  {"solver", optional_argument, 0, 1},
-                                  {"ordering", optional_argument, 0, 2},
-                                  {"verbose", optional_argument, 0, 3},
-                                  {"trials", optional_argument, 0, 4},
-                                  {0, 0, 0, 0}};
+  // Supported command line options.
+  static struct option long_options[] = {
+      {"matrix", required_argument, 0, 10},
+      {"solver", required_argument, 0, 20},
+      {"ordering", required_argument, 0, 30},
+      {"precision", required_argument, 0, 40},
+      {"verbose", required_argument, 0, 50},
+      {"trials", required_argument, 0, 60},
+      {"help", no_argument, 0, 70},
+      {0, 0, 0, 0}};
 
   // Create the struct and set defauls.
   struct cholbench *cb = tcalloc(struct cholbench, 1);
+  cb->matrix = NULL;
   cb->solver = CHOLBENCH_SOLVER_CUSOLVER;
   cb->ordering = CHOLBENCH_ORDERING_NONE;
+  cb->precision = CHOLBENCH_PRECISION_FP64;
   cb->verbose = 0;
   cb->trials = 50;
 
+  char bfr[BUFSIZ];
   // Parse the command line arguments.
   for (;;) {
-    int idx = 0;
-    int c = getopt_long(argc, argv, "", long_options, &idx);
+    int c = getopt_long(argc, argv, "", long_options, NULL);
     if (c == -1)
       break;
 
-    size_t len;
     switch (c) {
-    case 0:
-      len = strnlen(optarg, BUFSIZ);
-      cb->matrix = tcalloc(char, len + 1);
-      strncpy(cb->matrix, optarg, len);
+    case 10:
+      cb->matrix = strndup(optarg, BUFSIZ);
       break;
-    case 1:
-      cb->solver = atoi(optarg);
+    case 20:
+      strncpy(bfr, optarg, BUFSIZ);
+      cb->solver = str_to_solver(bfr);
       break;
-    case 2:
-      cb->ordering = atoi(optarg);
+    case 30:
+      strncpy(bfr, optarg, BUFSIZ);
+      cb->ordering = str_to_ordering(bfr);
       break;
-    case 3:
+    case 40:
+      strncpy(bfr, optarg, BUFSIZ);
+      cb->precision = str_to_precision(bfr);
+      break;
+    case 50:
       cb->verbose = atoi(optarg);
       break;
-    case 4:
+    case 60:
       cb->trials = atoi(optarg);
       break;
+    case 70:
+      print_help(argc, argv);
+      exit(EXIT_SUCCESS);
     default:
-      errx(EXIT_FAILURE, "Unknown command line option.");
+      print_help(argc, argv);
+      exit(EXIT_FAILURE);
       break;
     }
   }
 
+  // FIXME: Register these init functions.
   cusparse_init();
 
   return cb;
@@ -98,7 +176,7 @@ struct csr *cholbench_matrix_read(const struct cholbench *cb) {
 
   struct coo_entry *arr = tcalloc(struct coo_entry, nnz);
   if (arr == NULL)
-    err(EXIT_FAILURE, "Unable to allocate memories for %u COO entries", nnz);
+    err(EXIT_FAILURE, "Unable to allocate memories for %u COO entries.", nnz);
 
   for (unsigned i = 0; i < nnz; i++) {
     ret = fscanf(fp, "%u %u %lf%c", &arr[i].r, &arr[i].c, &arr[i].v, &ch);
