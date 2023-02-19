@@ -5,7 +5,10 @@
 extern "C" {
 #endif
 
-typedef enum { CHOLBENCH_SOLVER_CUSOLVER = 0 } cholbench_solver_t;
+typedef enum {
+  CHOLBENCH_SOLVER_CUSOLVER = 0,
+  CHOLBENCH_SOLVER_HYPRE = 1
+} cholbench_solver_t;
 
 typedef enum {
   CHOLBENCH_PRECISION_FP64 = 0,

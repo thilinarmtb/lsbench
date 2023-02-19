@@ -3,6 +3,9 @@
 
 #include "cholbench.h"
 #include <stdlib.h>
+#if defined(CHOLBENCH_MPI)
+#include <mpi.h>
+#endif
 
 #ifdef _cplusplus
 extern "C" {
@@ -14,6 +17,11 @@ struct cholbench {
   cholbench_ordering_t ordering;
   cholbench_precision_t precision;
   unsigned verbose, trials;
+#if defined(CHOLBENCH_MPI)
+  MPI_Comm comm;
+#else
+  int comm;
+#endif
 };
 
 struct csr {
@@ -35,6 +43,11 @@ int cusparse_init();
 int cusparse_finalize();
 void cusparse_bench(double *x, struct csr *A, const double *r,
                     const struct cholbench *cb);
+
+int hypre_init();
+int hypre_finalize();
+void hypre_bench(double *x, struct csr *A, const double *r,
+                 const struct cholbench *cb);
 
 #ifdef _cplusplus
 }

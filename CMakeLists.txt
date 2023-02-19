@@ -1,20 +1,46 @@
 cmake_minimum_required(VERSION 3.18)
 project(cusparse_cholesky VERSION 0.0.1 DESCRIPTION
-  "Benchmark cusparse Cholesky solve times" LANGUAGES C CUDA)
+  "Benchmark cusparse Cholesky solve times" LANGUAGES C)
+
+option(ENABLE_HYPRE "Enable Hypre support." ON)
+option(ENABLE_CUSPARSE "Enable cusaprse support." ON)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-find_package(CUDAToolkit REQUIRED)
-
-set(SOURCES src/cholbench.c src/cusparse.c)
+set(SOURCES src/cholbench.c)
+if (ENABLE_CUSPARSE)
+  set(SOURCES ${SOURCES} src/cusparse.c)
+endif()
+if (ENABLE_HYPRE)
+  set(SOURCES ${SOURCES} src/hypre.c)
+endif()
 
 add_library(cholbench SHARED ${SOURCES})
 target_include_directories(cholbench PRIVATE src)
-target_link_libraries(cholbench CUDA::cudart CUDA::cusparse CUDA::cusolver)
-set_target_properties(cholbench PROPERTIES VERSION ${PROJECT_VERSION}
+set_target_properties(cholbench PROPERTIES
+  VERSION ${PROJECT_VERSION}
   SOVERSION 1
-  PUBLIC_HEADER src/cholbench.h
-  CUDA_SEPARABLE_COMPILATION ON)
+  PUBLIC_HEADER src/cholbench.h)
+
+set(MPI_C_COMPILER ${CMAKE_C_COMPILER})
+set(MPI_CXX_COMPILER ${CMAKE_CXX_COMPILER})
+find_package(MPI REQUIRED)
+if (NOT MPI_FOUND)
+  message(FATAL_ERROR "MPI is not found for C or CXX")
+#else()
+#  target_compile_definitions(cholbench PRIVATE -DCHOLBENCH_MPI)
+endif()
+
+if (ENABLE_CUSPARSE)
+  enable_language(CUDA)
+  find_package(CUDAToolkit 11.0 REQUIRED)
+  target_link_libraries(cholbench PRIVATE CUDA::cudart CUDA::cusparse CUDA::cusolver)
+  set_target_properties(cholbench PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+endif()
+
+if (ENABLE_HYPRE)
+  include(libs/hypre.cmake)
+endif()
 
 add_executable(driver bin/driver.c)
 target_link_libraries(driver cholbench)
