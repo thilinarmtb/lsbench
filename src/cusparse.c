@@ -16,17 +16,19 @@
 #define chk_sparse(err)                                                        \
   {                                                                            \
     cusparseStatus_t err_ = (err);                                             \
-    if (err_ != CUSPARSE_STATUS_SUCCESS)                                       \
+    if (err_ != CUSPARSE_STATUS_SUCCESS) {                                     \
       errx(EXIT_FAILURE, "%s:%d cusparse error: %s", __FILE__, __LINE__,       \
            cusparseGetErrorString(err_));                                      \
+    }                                                                          \
   }
 
 #define chk_rt(err)                                                            \
   {                                                                            \
     cudaError_t err_ = (err);                                                  \
-    if (err_ != cudaSuccess)                                                   \
+    if (err_ != cudaSuccess) {                                                 \
       errx(EXIT_FAILURE, "%s:%d cuda error: %s", __FILE__, __LINE__,           \
            cudaGetErrorString(err_));                                          \
+    }                                                                          \
   }
 
 static int initialized = 0;
@@ -127,9 +129,9 @@ static void csr_finalize(struct csr *A) {
   struct cusparse_csr *B = (struct cusparse_csr *)A->ptr;
   if (B) {
     chk_sparse(cusparseDestroyMatDescr(B->M));
-    chk_rt(cudaFree(B->d_off));
-    chk_rt(cudaFree(B->d_col));
-    chk_rt(cudaFree(B->d_val));
+    chk_rt(cudaFree((void *)B->d_off));
+    chk_rt(cudaFree((void *)B->d_col));
+    chk_rt(cudaFree((void *)B->d_val));
     tfree(B->h_Q), tfree(B->h_off), tfree(B->h_col), tfree(B->h_val);
   }
 
@@ -199,8 +201,8 @@ void cusparse_bench(double *x, struct csr *A, const double *r,
   t = clock() - t;
 
   chk_rt(cudaMemcpy(tmp, d_x, m * sizeof(double), cudaMemcpyDeviceToHost));
-  chk_rt(cudaFree(d_r));
-  chk_rt(cudaFree(d_x));
+  chk_rt(cudaFree((void *)d_r));
+  chk_rt(cudaFree((void *)d_x));
 
   for (unsigned i = 0; i < m; i++)
     x[B->h_Q[i]] = tmp[i];
