@@ -7,7 +7,8 @@ extern "C" {
 
 typedef enum {
   CHOLBENCH_SOLVER_CUSOLVER = 0,
-  CHOLBENCH_SOLVER_HYPRE = 1
+  CHOLBENCH_SOLVER_HYPRE = 1,
+  CHOLBENCH_SOLVER_AMGX = 2
 } cholbench_solver_t;
 
 typedef enum {

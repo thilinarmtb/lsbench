@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.18)
 project(cusparse_cholesky VERSION 0.0.1 DESCRIPTION
   "Benchmark cusparse Cholesky solve times" LANGUAGES C)
 
-option(ENABLE_HYPRE "Enable Hypre support." ON)
 option(ENABLE_CUSPARSE "Enable cusaprse support." ON)
+option(ENABLE_HYPRE "Enable Hypre support." ON)
+option(ENABLE_AMGX "Enable AmgX support." ON)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
@@ -13,6 +14,9 @@ if (ENABLE_CUSPARSE)
 endif()
 if (ENABLE_HYPRE)
   set(SOURCES ${SOURCES} src/hypre.c)
+endif()
+if (ENABLE_AMGX)
+  set(SOURCES ${SOURCES} src/amgx.c)
 endif()
 
 add_library(cholbench SHARED ${SOURCES})
@@ -29,6 +33,10 @@ endif()
 if (ENABLE_HYPRE)
   include(libs/hypre.cmake)
   target_compile_definitions(cholbench PRIVATE -DCHOLBENCH_HYPRE)
+endif()
+if (ENABLE_AMGX)
+  include(libs/amgx.cmake)
+  target_compile_definitions(cholbench PRIVATE -DCHOLBENCH_AMGX)
 endif()
 
 add_executable(driver bin/driver.c)

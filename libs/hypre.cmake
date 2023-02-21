@@ -42,6 +42,7 @@ ExternalProject_Add(HYPRE_DEVICE
 )
 
 add_dependencies(cholbench HYPRE_DEVICE)
-target_link_libraries(cholbench PRIVATE ${HYPRE_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE.a
+target_link_libraries(cholbench PRIVATE
+  ${HYPRE_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE.a
   CUDA::cudart CUDA::curand CUDA::cublas CUDA::cusparse CUDA::cusolver) 
 target_include_directories(cholbench PRIVATE ${HYPRE_INSTALL_DIR}/include)

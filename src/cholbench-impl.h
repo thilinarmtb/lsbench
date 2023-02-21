@@ -51,6 +51,11 @@ int hypre_finalize();
 void hypre_bench(double *x, struct csr *A, const double *r,
                  const struct cholbench *cb);
 
+int amgx_init();
+int amgx_finalize();
+void amgx_bench(double *x, struct csr *A, const double *r,
+                const struct cholbench *cb);
+
 #ifdef _cplusplus
 }
 #endif
