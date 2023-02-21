@@ -32,9 +32,9 @@
   }
 
 static int initialized = 0;
-static cusolverSpHandle_t solver = NULL;
-static cusparseHandle_t sparse = NULL;
-static cudaStream_t stream = NULL;
+static cusolverSpHandle_t solver = 0;
+static cusparseHandle_t sparse = 0;
+static cudaStream_t stream = 0;
 
 static cusparseIndexBase_t index_base[2] = {CUSPARSE_INDEX_BASE_ZERO,
                                             CUSPARSE_INDEX_BASE_ONE};
