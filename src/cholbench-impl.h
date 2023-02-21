@@ -17,11 +17,6 @@ struct cholbench {
   cholbench_ordering_t ordering;
   cholbench_precision_t precision;
   unsigned verbose, trials;
-#if defined(CHOLBENCH_MPI)
-  MPI_Comm comm;
-#else
-  int comm;
-#endif
 };
 
 struct csr {
@@ -38,6 +33,13 @@ static inline void sfree(void *p, const char *file, unsigned line) {
     free(p);
 }
 #define tfree(p) sfree((void *)p, __FILE__, __LINE__)
+
+struct backend {
+  int (*init)();
+  int (*finalize)();
+  void (*bench)(double *, struct csr *, const double *,
+                const struct cholbench *);
+};
 
 int cusparse_init();
 int cusparse_finalize();

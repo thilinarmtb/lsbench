@@ -29,8 +29,9 @@ struct hypre_csr {
 static void csr_init(struct csr *A, const struct cholbench *cb) {
   struct hypre_csr *B = tcalloc(struct hypre_csr, 1);
 
+  int comm = 0;
   HYPRE_BigInt lower = A->base, upper = (HYPRE_BigInt)A->nrows - 1 + A->base;
-  HYPRE_IJMatrixCreate(cb->comm, lower, upper, lower, upper, &B->A);
+  HYPRE_IJMatrixCreate(comm, lower, upper, lower, upper, &B->A);
   HYPRE_IJMatrixSetObjectType(B->A, HYPRE_PARCSR);
   HYPRE_IJMatrixInitialize(B->A);
 
@@ -71,7 +72,7 @@ static void csr_init(struct csr *A, const struct cholbench *cb) {
 
   HYPRE_IJMatrixSetValues(B->A, nr, d_ncols, d_rows, d_cols, d_vals);
   HYPRE_IJMatrixAssemble(B->A);
-  HYPRE_IJMatrixPrint(B->A, "A.dat");
+  // HYPRE_IJMatrixPrint(B->A, "A.dat");
 
   chk_rt(cudaFree((void *)d_rows));
   chk_rt(cudaFree((void *)d_cols));
@@ -79,12 +80,12 @@ static void csr_init(struct csr *A, const struct cholbench *cb) {
   chk_rt(cudaFree((void *)d_vals));
 
   // Create and initialize rhs and solution vectors
-  HYPRE_IJVectorCreate(cb->comm, lower, upper, &B->b);
+  HYPRE_IJVectorCreate(comm, lower, upper, &B->b);
   HYPRE_IJVectorSetObjectType(B->b, HYPRE_PARCSR);
   HYPRE_IJVectorInitialize(B->b);
   HYPRE_IJVectorAssemble(B->b);
 
-  HYPRE_IJVectorCreate(cb->comm, lower, upper, &B->x);
+  HYPRE_IJVectorCreate(comm, lower, upper, &B->x);
   HYPRE_IJVectorSetObjectType(B->x, HYPRE_PARCSR);
   HYPRE_IJVectorInitialize(B->x);
   HYPRE_IJVectorAssemble(B->x);
@@ -216,8 +217,8 @@ void hypre_bench(double *x, struct csr *A, const double *r,
   HYPRE_ParCSRMatrix par_A;
   HYPRE_IJMatrixGetObject(B->A, (void **)&par_A);
 
-  HYPRE_IJVectorPrint(B->b, "b.dat");
-  HYPRE_IJVectorPrint(B->x, "x.dat");
+  // HYPRE_IJVectorPrint(B->b, "b.dat");
+  // HYPRE_IJVectorPrint(B->x, "x.dat");
 
   // Warmup
   for (unsigned i = 0; i < cb->trials; i++)
@@ -237,15 +238,6 @@ void hypre_bench(double *x, struct csr *A, const double *r,
 
   for (unsigned i = 0; i < nr; i++)
     x[i] = tmp[i];
-
-#if 0
-  printf("r =\n");
-  for (unsigned i = 0; i < nr; i++)
-    printf("%lf\n", r[i]);
-  printf("x =\n");
-  for (unsigned i = 0; i < nr; i++)
-    printf("%lf\n", x[i]);
-#endif
 
   printf("===matrix,n,nnz,trials,solver,ordering,elapsed===\n");
   printf("%s,%u,%u,%u,%u,%d,%.15lf\n", cb->matrix, nr, nnz, cb->trials,

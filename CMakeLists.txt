@@ -7,7 +7,7 @@ option(ENABLE_CUSPARSE "Enable cusaprse support." ON)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-set(SOURCES src/cholbench.c)
+set(SOURCES src/cholbench.c src/cholbench-csr.c)
 if (ENABLE_CUSPARSE)
   set(SOURCES ${SOURCES} src/cusparse.c)
 endif()
@@ -22,24 +22,13 @@ set_target_properties(cholbench PROPERTIES
   SOVERSION 1
   PUBLIC_HEADER src/cholbench.h)
 
-set(MPI_C_COMPILER ${CMAKE_C_COMPILER})
-set(MPI_CXX_COMPILER ${CMAKE_CXX_COMPILER})
-find_package(MPI REQUIRED)
-if (NOT MPI_FOUND)
-  message(FATAL_ERROR "MPI is not found for C or CXX")
-#else()
-#  target_compile_definitions(cholbench PRIVATE -DCHOLBENCH_MPI)
-endif()
-
 if (ENABLE_CUSPARSE)
-  enable_language(CUDA)
-  find_package(CUDAToolkit 11.0 REQUIRED)
-  target_link_libraries(cholbench PRIVATE CUDA::cudart CUDA::cusparse CUDA::cusolver)
-  set_target_properties(cholbench PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  include(libs/cusparse.cmake)
+  target_compile_definitions(cholbench PRIVATE -DCHOLBENCH_CUSPARSE)
 endif()
-
 if (ENABLE_HYPRE)
   include(libs/hypre.cmake)
+  target_compile_definitions(cholbench PRIVATE -DCHOLBENCH_HYPRE)
 endif()
 
 add_executable(driver bin/driver.c)
