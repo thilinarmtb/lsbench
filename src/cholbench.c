@@ -137,9 +137,15 @@ struct cholbench *cholbench_init(int argc, char *argv[]) {
   }
 
   // FIXME: Register these init functions.
+#ifdef CHOLBENCH_CUSPARSE
   cusparse_init();
+#endif
+#ifdef CHOLBENCH_HYPRE
   hypre_init();
+#endif
+#ifdef CHOLBENCH_AMGX
   amgx_init();
+#endif
 
   return cb;
 }
@@ -153,13 +159,19 @@ void cholbench_bench(struct csr *A, const struct cholbench *cb) {
   // FIXME: Register these bench functions.
   switch (cb->solver) {
   case CHOLBENCH_SOLVER_CUSOLVER:
+#ifdef CHOLBENCH_CUSPARSE
     cusparse_bench(x, A, r, cb);
+#endif
     break;
   case CHOLBENCH_SOLVER_HYPRE:
+#ifdef CHOLBENCH_HYPRE
     hypre_bench(x, A, r, cb);
+#endif
     break;
   case CHOLBENCH_SOLVER_AMGX:
+#ifdef CHOLBENCH_AMGX
     amgx_bench(x, A, r, cb);
+#endif
     break;
   default:
     errx(EXIT_FAILURE, "Unknown solver: %d.", cb->solver);
@@ -171,9 +183,15 @@ void cholbench_bench(struct csr *A, const struct cholbench *cb) {
 
 void cholbench_finalize(struct cholbench *cb) {
   // FIXME: Register these finalize functions.
+#ifdef CHOLBENCH_CUSPARSE
   cusparse_finalize();
+#endif
+#ifdef CHOLBENCH_HYPRE
   hypre_finalize();
+#endif
+#ifdef CHOLBENCH_AMGX
   amgx_finalize();
+#endif
 
   if (cb)
     tfree(cb->matrix);

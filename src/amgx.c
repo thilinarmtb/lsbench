@@ -100,23 +100,8 @@ int amgx_init() {
   return 0;
 }
 
-int amgx_finalize() {
-  if (initialized) {
-    AMGX_solver_destroy(solver);
-    AMGX_resources_destroy(resource);
-    AMGX_SAFE_CALL(AMGX_config_destroy(config));
-    AMGX_SAFE_CALL(AMGX_finalize_plugins());
-    AMGX_SAFE_CALL(AMGX_finalize());
-  }
-
-  initialized = 0;
-
-  return 0;
-}
-
 void amgx_bench(double *x, struct csr *A, const double *r,
                 const struct cholbench *cb) {
-  assert(initialized);
   csr_init(A, cb);
 
   unsigned nr = A->nrows;
@@ -145,11 +130,22 @@ void amgx_bench(double *x, struct csr *A, const double *r,
   for (unsigned i = 0; i < nr; i++)
     x[i] = xf[i];
 
-  unsigned nnz = A->offs[nr];
-  printf("===matrix,n,nnz,trials,solver,ordering,elapsed===\n");
-  printf("%s,%u,%u,%u,%u,%d,%.15lf\n", cb->matrix, nr, nnz, cb->trials,
-         cb->solver, cb->ordering, (double)t / CLOCKS_PER_SEC);
+  printf("x =\n");
+  for (unsigned i = 0; i < nr; i++)
+    printf("%lf\n", x[i]);
 
-  tfree(rf), tfree(xf);
-  csr_finalize(A);
+  csr_finalize(A), tfree(rf), tfree(xf);
+}
+
+int amgx_finalize() {
+  if (initialized) {
+    AMGX_solver_destroy(solver);
+    AMGX_resources_destroy(resource);
+    AMGX_SAFE_CALL(AMGX_config_destroy(config));
+    AMGX_SAFE_CALL(AMGX_finalize_plugins());
+    AMGX_SAFE_CALL(AMGX_finalize());
+    initialized = 0;
+  }
+
+  return 0;
 }

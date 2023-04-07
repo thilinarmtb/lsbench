@@ -19,7 +19,7 @@
   }
 
 static int initialized = 0;
-static HYPRE_Solver solver;
+static HYPRE_Solver solver = 0;
 
 struct hypre_csr {
   HYPRE_IJMatrix A;
@@ -74,10 +74,10 @@ static void csr_init(struct csr *A, const struct cholbench *cb) {
   HYPRE_IJMatrixAssemble(B->A);
   // HYPRE_IJMatrixPrint(B->A, "A.dat");
 
-  chk_rt(cudaFree((void *)d_rows));
-  chk_rt(cudaFree((void *)d_cols));
-  chk_rt(cudaFree((void *)d_ncols));
-  chk_rt(cudaFree((void *)d_vals));
+  // chk_rt(cudaFree((void *)d_rows));
+  // chk_rt(cudaFree((void *)d_cols));
+  // chk_rt(cudaFree((void *)d_ncols));
+  // chk_rt(cudaFree((void *)d_vals));
 
   // Create and initialize rhs and solution vectors
   HYPRE_IJVectorCreate(comm, lower, upper, &B->b);
@@ -119,24 +119,26 @@ int hypre_init() {
   HYPRE_SetExecutionPolicy(HYPRE_EXEC_DEVICE);
 
   // Settings for cuda
-  HYPRE_SetSpGemmUseVendor(0);
+  HYPRE_Int spgemm_use_vendor = 0;
+  HYPRE_SetSpGemmUseVendor(spgemm_use_vendor);
   HYPRE_SetSpMVUseVendor(1);
-  HYPRE_SetUseGpuRand(1);
 
-  HYPRE_BoomerAMGCreate(&solver);
+  HYPRE_SetUseGpuRand(1);
 
   double params[NPARAM];
   params[0] = 8;    /* coarsening */
   params[1] = 6;    /* interpolation */
   params[2] = 2;    /* number of cycles */
-  params[3] = 16;   /* smoother for crs level */
+  params[3] = 8;    /* smoother for crs level */
   params[4] = 3;    /* sweeps */
-  params[5] = 16;   /* smoother */
-  params[6] = 2;    /* sweeps   */
+  params[5] = 8;    /* smoother */
+  params[6] = 1;    /* sweeps   */
   params[7] = 0.25; /* threshold */
   params[8] = 0.00; /* non galerkin tolerance */
   params[9] = 0;    /* agressive coarsening */
   params[10] = 2;   /* chebyRelaxOrder */
+
+  HYPRE_BoomerAMGCreate(&solver);
 
   HYPRE_BoomerAMGSetCoarsenType(solver, params[0]);
   HYPRE_BoomerAMGSetInterpType(solver, params[1]);
@@ -144,7 +146,7 @@ int hypre_init() {
   HYPRE_BoomerAMGSetModuleRAP2(solver, 1);
   HYPRE_BoomerAMGSetKeepTranspose(solver, 1);
 
-  HYPRE_BoomerAMGSetChebyOrder(solver, params[10]);
+  // HYPRE_BoomerAMGSetChebyOrder(solver, params[10]);
   // HYPRE_BoomerAMGSetChebyFraction(*solver, 0.2);
 
   if (params[5] > 0) {
@@ -157,11 +159,12 @@ int hypre_init() {
   HYPRE_BoomerAMGSetCycleNumSweeps(solver, params[6], 2);
   HYPRE_BoomerAMGSetCycleNumSweeps(solver, 1, 3);
 
-  // if (null_space) {
-  //   HYPRE_BoomerAMGSetMinCoarseSize(*solver, 2);
-  //   HYPRE_BoomerAMGSetCycleRelaxType(*solver, params[3], 3);
-  //   HYPRE_BoomerAMGSetCycleNumSweeps(*solver, params[4], 3);
-  // }
+  int null_space = 0;
+  if (null_space) {
+    HYPRE_BoomerAMGSetMinCoarseSize(solver, 2);
+    HYPRE_BoomerAMGSetCycleRelaxType(solver, params[3], 3);
+    HYPRE_BoomerAMGSetCycleNumSweeps(solver, params[4], 3);
+  }
 
   HYPRE_BoomerAMGSetStrongThreshold(solver, params[7]);
 
@@ -232,18 +235,19 @@ void hypre_bench(double *x, struct csr *A, const double *r,
   chk_rt(cudaDeviceSynchronize());
   t = clock() - t;
 
-  chk_rt(cudaFree((void *)d_r));
+  HYPRE_IJVectorGetValues(B->x, nr, NULL, d_x);
   chk_rt(cudaMemcpy(tmp, d_x, nr * sizeof(HYPRE_Real), cudaMemcpyDeviceToHost));
+  chk_rt(cudaFree((void *)d_r));
   chk_rt(cudaFree((void *)d_x));
 
   for (unsigned i = 0; i < nr; i++)
     x[i] = tmp[i];
 
-  printf("===matrix,n,nnz,trials,solver,ordering,elapsed===\n");
-  printf("%s,%u,%u,%u,%u,%d,%.15lf\n", cb->matrix, nr, nnz, cb->trials,
-         cb->solver, cb->ordering, (double)t / CLOCKS_PER_SEC);
+  printf("x =\n");
+  for (unsigned i = 0; i < nr; i++)
+    printf("%lf\n", x[i]);
 
-  csr_finalize(A);
+  csr_finalize(A), tfree(tmp), csr_finalize(A);
 }
 
 int hypre_finalize() {

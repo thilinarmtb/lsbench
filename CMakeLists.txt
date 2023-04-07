@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 project(cusparse_cholesky VERSION 0.0.1 DESCRIPTION
   "Benchmark cusparse Cholesky solve times" LANGUAGES C)
 
-option(ENABLE_CUSPARSE "Enable cusaprse support." ON)
+option(ENABLE_CUSPARSE "Enable cusaprse support." OFF)
 option(ENABLE_HYPRE "Enable Hypre support." ON)
 option(ENABLE_AMGX "Enable AmgX support." ON)
 
