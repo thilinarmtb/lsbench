@@ -17,7 +17,7 @@ ExternalProject_Add(AMGX_DEVICE
     -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
 
 add_dependencies(lsbench AMGX_DEVICE)
-target_link_libraries(lsbench PRIVATE
+target_link_libraries(lsbench PUBLIC
   ${AMGX_INSTALL_DIR}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}amgxsh${CMAKE_SHARED_LIBRARY_SUFFIX}
   ${AMGX_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}amgx${CMAKE_STATIC_LIBRARY_SUFFIX}
   CUDA::cudart CUDA::curand CUDA::cublas CUDA::cusparse CUDA::cusolver) 

@@ -1,11 +1,13 @@
 #include "lsbench-impl.h"
+#include <err.h>
+#include <stdio.h>
+#include <time.h>
+
+#if defined(LSBENCH_HYPRE)
 #include <HYPRE.h>
 #include <HYPRE_parcsr_ls.h>
 #include <_hypre_utilities.h>
 #include <cuda_runtime.h>
-#include <err.h>
-#include <stdio.h>
-#include <time.h>
 
 #define NPARAM 11
 
@@ -258,5 +260,11 @@ int hypre_finalize() {
   }
   return 0;
 }
+#else
+int hypre_init();
+void hypre_bench(double *x, struct csr *A, const double *r,
+                 const struct lsbench *cb);
+void hypre_finalize();
+#endif
 
 #undef NPARAM
