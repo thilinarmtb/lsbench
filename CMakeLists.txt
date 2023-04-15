@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.18)
 project(cusparse_cholesky VERSION 0.0.1 DESCRIPTION
-  "Benchmark cusparse Cholesky solve times" LANGUAGES C)
+  "Benchmark linear solve times" LANGUAGES C CXX)
 
 option(ENABLE_CUSPARSE "Enable cusaprse support." OFF)
 option(ENABLE_HYPRE "Enable Hypre support." ON)
-option(ENABLE_AMGX "Enable AmgX support." ON)
+option(ENABLE_AMGX "Enable AmgX support." OFF)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
@@ -50,3 +50,7 @@ if (CLANG_FORMAT)
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Running clang-format ...")
 endif()
+
+install(TARGETS cholbench driver RUNTIME DESTINATION bin LIBRARY DESTINATION lib
+  PUBLIC_HEADER DESTINATION include
+)
