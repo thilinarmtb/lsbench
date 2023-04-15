@@ -1,4 +1,4 @@
-#include "cholbench-impl.h"
+#include "lsbench-impl.h"
 #include <HYPRE.h>
 #include <HYPRE_parcsr_ls.h>
 #include <_hypre_utilities.h>
@@ -26,7 +26,7 @@ struct hypre_csr {
   HYPRE_IJVector b, x;
 };
 
-static void csr_init(struct csr *A, const struct cholbench *cb) {
+static void csr_init(struct csr *A, const struct lsbench *cb) {
   struct hypre_csr *B = tcalloc(struct hypre_csr, 1);
 
   int comm = 0;
@@ -196,7 +196,7 @@ int hypre_init() {
 }
 
 void hypre_bench(double *x, struct csr *A, const double *r,
-                 const struct cholbench *cb) {
+                 const struct lsbench *cb) {
   csr_init(A, cb);
 
   unsigned nr = A->nrows, nnz = A->offs[nr];

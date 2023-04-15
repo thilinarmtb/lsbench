@@ -1,15 +1,15 @@
-#include "cholbench.h"
+#include "lsbench.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-  struct cholbench *cb = cholbench_init(argc, argv);
+  struct lsbench *cb = lsbench_init(argc, argv);
 
-  struct csr *A = cholbench_matrix_read(cb);
-  cholbench_bench(A, cb);
-  cholbench_matrix_free(A);
+  struct csr *A = lsbench_matrix_read(cb);
+  lsbench_bench(A, cb);
+  lsbench_matrix_free(A);
 
-  cholbench_finalize(cb);
+  lsbench_finalize(cb);
 
   return 0;
 }

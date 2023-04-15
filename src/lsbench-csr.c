@@ -1,4 +1,4 @@
-#include "cholbench-impl.h"
+#include "lsbench-impl.h"
 #include <assert.h>
 #include <err.h>
 #include <stdio.h>
@@ -26,7 +26,7 @@ static int cmp_coo(const void *va, const void *vb) {
   return 0;
 }
 
-struct csr *cholbench_matrix_read(const struct cholbench *cb) {
+struct csr *lsbench_matrix_read(const struct lsbench *cb) {
   FILE *fp = fopen(cb->matrix, "r");
   if (!fp)
     err(EXIT_FAILURE, "Unable to open file \"%s\" for reading", cb->matrix);
@@ -91,14 +91,14 @@ struct csr *cholbench_matrix_read(const struct cholbench *cb) {
   return A;
 }
 
-void cholbench_matrix_print(const struct csr *A) {
+void lsbench_matrix_print(const struct csr *A) {
   for (unsigned i = 0; i < A->nrows; i++) {
     for (unsigned s = A->offs[i], e = A->offs[i + 1]; s < e; s++)
       printf("%u %u %lf\n", i + A->base, A->cols[s], A->vals[s]);
   }
 }
 
-void cholbench_matrix_free(struct csr *A) {
+void lsbench_matrix_free(struct csr *A) {
   if (A) {
     tfree(A->offs);
     tfree(A->cols);

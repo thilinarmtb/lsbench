@@ -1,4 +1,4 @@
-#include "cholbench-impl.h"
+#include "lsbench-impl.h"
 #include <ctype.h>
 #include <err.h>
 #include <getopt.h>
@@ -14,51 +14,51 @@ static void str_to_upper(char *up, const char *str) {
   up[n] = '\0';
 }
 
-static cholbench_solver_t str_to_solver(const char *str) {
+static lsbench_solver_t str_to_solver(const char *str) {
   char up[BUFSIZ];
   str_to_upper(up, str);
 
   if (strcmp(up, "CUSOLVER") == 0) {
-    return CHOLBENCH_SOLVER_CUSOLVER;
+    return LSBENCH_SOLVER_CUSOLVER;
   } else if (strcmp(up, "HYPRE") == 0) {
-    return CHOLBENCH_SOLVER_HYPRE;
+    return LSBENCH_SOLVER_HYPRE;
   } else if (strcmp(up, "AMGX") == 0) {
-    return CHOLBENCH_SOLVER_AMGX;
+    return LSBENCH_SOLVER_AMGX;
   } else {
     warnx("Invalid solver: \"%s\". Defaulting to CUSOLVER.", str);
-    return CHOLBENCH_SOLVER_CUSOLVER;
+    return LSBENCH_SOLVER_CUSOLVER;
   }
 }
 
-static cholbench_ordering_t str_to_ordering(const char *str) {
+static lsbench_ordering_t str_to_ordering(const char *str) {
   char up[BUFSIZ];
   str_to_upper(up, str);
 
   if (strcmp(up, "RCM") == 0) {
-    return CHOLBENCH_ORDERING_RCM;
+    return LSBENCH_ORDERING_RCM;
   } else if (strcmp(up, "AMD") == 0) {
-    return CHOLBENCH_ORDERING_AMD;
+    return LSBENCH_ORDERING_AMD;
   } else if (strcmp(up, "METIS") == 0) {
-    return CHOLBENCH_ORDERING_METIS;
+    return LSBENCH_ORDERING_METIS;
   } else {
-    warnx("Invalid ordering: \"%s\". Defaulting to no ordering.", str);
-    return CHOLBENCH_ORDERING_NONE;
+    warnx("Invalid ordering: \"%s\". Defaulting to RCM.", str);
+    return LSBENCH_ORDERING_RCM;
   }
 }
 
-static cholbench_precision_t str_to_precision(const char *str) {
+static lsbench_precision_t str_to_precision(const char *str) {
   char up[BUFSIZ];
   str_to_upper(up, str);
 
   if (strcmp(up, "FP64") == 0) {
-    return CHOLBENCH_PRECISION_FP64;
+    return LSBENCH_PRECISION_FP64;
   } else if (strcmp(up, "FP32") == 0) {
-    return CHOLBENCH_PRECISION_FP32;
+    return LSBENCH_PRECISION_FP32;
   } else if (strcmp(up, "FP16") == 0) {
-    return CHOLBENCH_PRECISION_FP16;
+    return LSBENCH_PRECISION_FP16;
   } else {
     warnx("Invalid precision: \"%s\". Defaulting to FP64.", str);
-    return CHOLBENCH_PRECISION_FP64;
+    return LSBENCH_PRECISION_FP64;
   }
 }
 
@@ -66,7 +66,7 @@ static void print_help(int argc, char *argv[]) {
   printf("Usage: %s [OPTIONS]\n");
   printf("Options:\n");
   printf("  --matrix <FILE>\n");
-  printf("  --solver <SOLVER>, Values: cusolver\n");
+  printf("  --solver <SOLVER>, Values: hypre, amgx, cusolver\n");
   printf("  --ordering <ORDERING>, Values: RCM, AMD, METIS\n");
   printf("  --precision <PRECISION>, Values: FP64, FP32, FP16\n");
   printf("  --verbose <VERBOSITY>, Values: 0, 1, 2, ...\n");
@@ -76,7 +76,7 @@ static void print_help(int argc, char *argv[]) {
 
 static struct backend *backends[MAX_BACKEND];
 
-struct cholbench *cholbench_init(int argc, char *argv[]) {
+struct lsbench *lsbench_init(int argc, char *argv[]) {
   // Supported command line options.
   static struct option long_options[] = {
       {"matrix", required_argument, 0, 10},
@@ -89,11 +89,10 @@ struct cholbench *cholbench_init(int argc, char *argv[]) {
       {0, 0, 0, 0}};
 
   // Create the struct and set defauls.
-  struct cholbench *cb = tcalloc(struct cholbench, 1);
+  struct lsbench *cb = tcalloc(struct lsbench, 1);
   cb->matrix = NULL;
-  cb->solver = CHOLBENCH_SOLVER_CUSOLVER;
-  cb->ordering = CHOLBENCH_ORDERING_NONE;
-  cb->precision = CHOLBENCH_PRECISION_FP64;
+  cb->solver = LSBENCH_SOLVER_NONE;
+  cb->precision = LSBENCH_PRECISION_FP64;
   cb->verbose = 0;
   cb->trials = 50;
 
@@ -136,21 +135,25 @@ struct cholbench *cholbench_init(int argc, char *argv[]) {
     }
   }
 
+  // Sanity checks
+  if (cb->matrix == NULL || cb->solver == LSBENCH_SOLVER_NONE)
+    errx(EXIT_FAILURE, "Either input matrix or solver is not provided ! Try --help.");
+
   // FIXME: Register these init functions.
-#ifdef CHOLBENCH_CUSPARSE
+#ifdef LSBENCH_CUSPARSE
   cusparse_init();
 #endif
-#ifdef CHOLBENCH_HYPRE
+#ifdef LSBENCH_HYPRE
   hypre_init();
 #endif
-#ifdef CHOLBENCH_AMGX
+#ifdef LSBENCH_AMGX
   amgx_init();
 #endif
 
   return cb;
 }
 
-void cholbench_bench(struct csr *A, const struct cholbench *cb) {
+void lsbench_bench(struct csr *A, const struct lsbench *cb) {
   unsigned m = A->nrows;
   double *x = tcalloc(double, m), *r = tcalloc(double, m);
   for (unsigned i = 0; i < m; i++)
@@ -158,18 +161,18 @@ void cholbench_bench(struct csr *A, const struct cholbench *cb) {
 
   // FIXME: Register these bench functions.
   switch (cb->solver) {
-  case CHOLBENCH_SOLVER_CUSOLVER:
-#ifdef CHOLBENCH_CUSPARSE
+  case LSBENCH_SOLVER_CUSOLVER:
+#ifdef LSBENCH_CUSPARSE
     cusparse_bench(x, A, r, cb);
 #endif
     break;
-  case CHOLBENCH_SOLVER_HYPRE:
-#ifdef CHOLBENCH_HYPRE
+  case LSBENCH_SOLVER_HYPRE:
+#ifdef LSBENCH_HYPRE
     hypre_bench(x, A, r, cb);
 #endif
     break;
-  case CHOLBENCH_SOLVER_AMGX:
-#ifdef CHOLBENCH_AMGX
+  case LSBENCH_SOLVER_AMGX:
+#ifdef LSBENCH_AMGX
     amgx_bench(x, A, r, cb);
 #endif
     break;
@@ -181,15 +184,15 @@ void cholbench_bench(struct csr *A, const struct cholbench *cb) {
   tfree(x), tfree(r);
 }
 
-void cholbench_finalize(struct cholbench *cb) {
+void lsbench_finalize(struct lsbench *cb) {
   // FIXME: Register these finalize functions.
-#ifdef CHOLBENCH_CUSPARSE
+#ifdef LSBENCH_CUSPARSE
   cusparse_finalize();
 #endif
-#ifdef CHOLBENCH_HYPRE
+#ifdef LSBENCH_HYPRE
   hypre_finalize();
 #endif
-#ifdef CHOLBENCH_AMGX
+#ifdef LSBENCH_AMGX
   amgx_finalize();
 #endif
 

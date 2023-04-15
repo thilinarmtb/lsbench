@@ -1,4 +1,4 @@
-#include "cholbench-impl.h"
+#include "lsbench-impl.h"
 #include <amgx_c.h>
 #include <assert.h>
 #include <cuda_runtime.h>
@@ -27,7 +27,7 @@ struct amgx_csr {
   AMGX_matrix_handle A;
 };
 
-static void csr_init(struct csr *A, const struct cholbench *cb) {
+static void csr_init(struct csr *A, const struct lsbench *cb) {
   struct amgx_csr *B = tcalloc(struct amgx_csr, 1);
 
   AMGX_SAFE_CALL(AMGX_vector_create(&B->x, resource, mode));
@@ -101,7 +101,7 @@ int amgx_init() {
 }
 
 void amgx_bench(double *x, struct csr *A, const double *r,
-                const struct cholbench *cb) {
+                const struct lsbench *cb) {
   csr_init(A, cb);
 
   unsigned nr = A->nrows;

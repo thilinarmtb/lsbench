@@ -1,4 +1,4 @@
-#include "cholbench-impl.h"
+#include "lsbench-impl.h"
 #include <cuda_runtime.h>
 #include <cusolverSp.h>
 #include <cusparse.h>
@@ -45,7 +45,7 @@ struct cusparse_csr {
   double *d_val, *h_val;
 };
 
-static void csr_init(struct csr *A, const struct cholbench *cb) {
+static void csr_init(struct csr *A, const struct lsbench *cb) {
   struct cusparse_csr *B = tcalloc(struct cusparse_csr, 1);
 
   // Create desrciptor for M.
@@ -66,19 +66,19 @@ static void csr_init(struct csr *A, const struct cholbench *cb) {
   // Find a reordering to minimize fill-in.
   B->h_Q = tcalloc(int, m);
   switch (cb->ordering) {
-  case CHOLBENCH_ORDERING_RCM:
+  case LSBENCH_ORDERING_RCM:
     chk_solver(
         cusolverSpXcsrsymrcmHost(solver, m, nnz, B->M, h_off, h_col, B->h_Q));
     break;
-  case CHOLBENCH_ORDERING_AMD:
+  case LSBENCH_ORDERING_AMD:
     chk_solver(
         cusolverSpXcsrsymamdHost(solver, m, nnz, B->M, h_off, h_col, B->h_Q));
     break;
-  case CHOLBENCH_ORDERING_METIS:
+  case LSBENCH_ORDERING_METIS:
     chk_solver(cusolverSpXcsrmetisndHost(solver, m, nnz, B->M, h_off, h_col,
                                          NULL, B->h_Q));
     break;
-  case CHOLBENCH_ORDERING_NONE:
+  case LSBENCH_ORDERING_NONE:
     for (unsigned i = 0; i < m; i++)
       B->h_Q[i] = i;
   default:
@@ -166,7 +166,7 @@ int cusparse_finalize() {
 }
 
 void cusparse_bench(double *x, struct csr *A, const double *r,
-                    const struct cholbench *cb) {
+                    const struct lsbench *cb) {
   csr_init(A, cb);
 
   unsigned m = A->nrows, nnz = A->offs[m];

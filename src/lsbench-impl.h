@@ -1,9 +1,9 @@
-#ifndef _CHOLBENCH_IMPL_
-#define _CHOLBENCH_IMPL_
+#ifndef _LSBENCH_IMPL_
+#define _LSBENCH_IMPL_
 
-#include "cholbench.h"
+#include "lsbench.h"
 #include <stdlib.h>
-#if defined(CHOLBENCH_MPI)
+#if defined(LSBENCH_MPI)
 #include <mpi.h>
 #endif
 
@@ -11,11 +11,11 @@
 extern "C" {
 #endif
 
-struct cholbench {
+struct lsbench {
   char *matrix;
-  cholbench_solver_t solver;
-  cholbench_ordering_t ordering;
-  cholbench_precision_t precision;
+  lsbench_solver_t solver;
+  lsbench_ordering_t ordering;
+  lsbench_precision_t precision;
   unsigned verbose, trials;
 };
 
@@ -38,23 +38,23 @@ struct backend {
   int (*init)();
   int (*finalize)();
   void (*bench)(double *, struct csr *, const double *,
-                const struct cholbench *);
+                const struct lsbench *);
 };
 
 int cusparse_init();
 int cusparse_finalize();
 void cusparse_bench(double *x, struct csr *A, const double *r,
-                    const struct cholbench *cb);
+                    const struct lsbench *cb);
 
 int hypre_init();
 int hypre_finalize();
 void hypre_bench(double *x, struct csr *A, const double *r,
-                 const struct cholbench *cb);
+                 const struct lsbench *cb);
 
 int amgx_init();
 int amgx_finalize();
 void amgx_bench(double *x, struct csr *A, const double *r,
-                const struct cholbench *cb);
+                const struct lsbench *cb);
 
 #ifdef _cplusplus
 }

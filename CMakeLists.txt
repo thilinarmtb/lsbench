@@ -8,7 +8,7 @@ option(ENABLE_AMGX "Enable AmgX support." OFF)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-set(SOURCES src/cholbench.c src/cholbench-csr.c)
+set(SOURCES src/lsbench.c src/lsbench-csr.c)
 if (ENABLE_CUSPARSE)
   set(SOURCES ${SOURCES} src/cusparse.c)
 endif()
@@ -19,28 +19,28 @@ if (ENABLE_AMGX)
   set(SOURCES ${SOURCES} src/amgx.c)
 endif()
 
-add_library(cholbench SHARED ${SOURCES})
-target_include_directories(cholbench PRIVATE src)
-set_target_properties(cholbench PROPERTIES
+add_library(lsbench SHARED ${SOURCES})
+target_include_directories(lsbench PRIVATE src)
+set_target_properties(lsbench PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION 1
-  PUBLIC_HEADER src/cholbench.h)
+  PUBLIC_HEADER src/lsbench.h)
 
 if (ENABLE_CUSPARSE)
   include(libs/cusparse.cmake)
-  target_compile_definitions(cholbench PRIVATE -DCHOLBENCH_CUSPARSE)
+  target_compile_definitions(lsbench PRIVATE -DLSBENCH_CUSPARSE)
 endif()
 if (ENABLE_HYPRE)
   include(libs/hypre.cmake)
-  target_compile_definitions(cholbench PRIVATE -DCHOLBENCH_HYPRE)
+  target_compile_definitions(lsbench PRIVATE -DLSBENCH_HYPRE)
 endif()
 if (ENABLE_AMGX)
   include(libs/amgx.cmake)
-  target_compile_definitions(cholbench PRIVATE -DCHOLBENCH_AMGX)
+  target_compile_definitions(lsbench PRIVATE -DLSBENCH_AMGX)
 endif()
 
 add_executable(driver bin/driver.c)
-target_link_libraries(driver cholbench)
+target_link_libraries(driver lsbench)
 target_include_directories(driver PUBLIC src)
 
 find_program(CLANG_FORMAT NAMES clang-format)
@@ -51,6 +51,6 @@ if (CLANG_FORMAT)
     COMMENT "Running clang-format ...")
 endif()
 
-install(TARGETS cholbench driver RUNTIME DESTINATION bin LIBRARY DESTINATION lib
+install(TARGETS lsbench driver RUNTIME DESTINATION bin LIBRARY DESTINATION lib
   PUBLIC_HEADER DESTINATION include
 )

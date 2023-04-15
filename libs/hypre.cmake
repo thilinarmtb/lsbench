@@ -41,8 +41,8 @@ ExternalProject_Add(HYPRE_DEVICE
     -DCMAKE_CUDA_HOST_COMPILER=${CMAKE_CXX_COMPILER}
 )
 
-add_dependencies(cholbench HYPRE_DEVICE)
-target_link_libraries(cholbench PRIVATE
+add_dependencies(lsbench HYPRE_DEVICE)
+target_link_libraries(lsbench PRIVATE
   ${HYPRE_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE.a
   CUDA::cudart CUDA::curand CUDA::cublas CUDA::cusparse CUDA::cusolver) 
-target_include_directories(cholbench PRIVATE ${HYPRE_INSTALL_DIR}/include)
+target_include_directories(lsbench PRIVATE ${HYPRE_INSTALL_DIR}/include)
