@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.18)
 project(cusparse_cholesky VERSION 0.0.1 DESCRIPTION
-  "Benchmark linear solve times" LANGUAGES C CXX)
+  "Benchmark linear solve times" LANGUAGES C)
 
 option(ENABLE_CUSPARSE "Enable cusaprse support." OFF)
-option(ENABLE_HYPRE "Enable Hypre support." ON)
+option(ENABLE_HYPRE "Enable Hypre support." OFF)
 option(ENABLE_AMGX "Enable AmgX support." OFF)
+option(ENABLE_PARALMOND "Enable parAlmond support." ON)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
+set(CMAKE_C_STANDARD 17)
 
 set(SOURCES src/lsbench.c src/lsbench-csr.c)
 if (ENABLE_CUSPARSE)
@@ -17,6 +19,11 @@ if (ENABLE_HYPRE)
 endif()
 if (ENABLE_AMGX)
   set(SOURCES ${SOURCES} src/amgx.c)
+endif()
+if (ENABLE_PARALMOND)
+  enable_language(CXX)
+  set(CMAKE_CXX_STANDARD 17)
+  set(SOURCES ${SOURCES} src/paralmond.cpp)
 endif()
 
 add_library(lsbench SHARED ${SOURCES})
@@ -38,10 +45,16 @@ if (ENABLE_AMGX)
   include(libs/amgx.cmake)
   target_compile_definitions(lsbench PRIVATE -DLSBENCH_AMGX)
 endif()
+if (ENABLE_PARALMOND)
+  include(libs/paralmond.cmake)
+  target_compile_definitions(lsbench PRIVATE -DLSBENCH_PARALMOND)
+endif()
 
 add_executable(driver bin/driver.c)
 target_link_libraries(driver lsbench)
 target_include_directories(driver PUBLIC src)
+set_target_properties(driver PROPERTIES VERSION ${PROJECT_VERSION}
+  PUBLIC_HEADER src/lsbench.h)
 
 find_program(CLANG_FORMAT NAMES clang-format)
 if (CLANG_FORMAT)
