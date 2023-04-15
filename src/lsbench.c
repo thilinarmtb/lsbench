@@ -136,8 +136,10 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
   }
 
   // Sanity checks
-  if (cb->matrix == NULL || cb->solver == LSBENCH_SOLVER_NONE)
-    errx(EXIT_FAILURE, "Either input matrix or solver is not provided ! Try --help.");
+  if (cb->matrix == NULL || cb->solver == LSBENCH_SOLVER_NONE) {
+    errx(EXIT_FAILURE,
+         "Either input matrix or solver is not provided ! Try `--help`.");
+  }
 
   // FIXME: Register these init functions.
 #ifdef LSBENCH_CUSPARSE

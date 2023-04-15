@@ -37,8 +37,7 @@ static inline void sfree(void *p, const char *file, unsigned line) {
 struct backend {
   int (*init)();
   int (*finalize)();
-  void (*bench)(double *, struct csr *, const double *,
-                const struct lsbench *);
+  void (*bench)(double *, struct csr *, const double *, const struct lsbench *);
 };
 
 int cusparse_init();

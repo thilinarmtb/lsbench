@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <cuda_runtime.h>
 #include <err.h>
-//#include <mpi.h>
 #include <stdio.h>
 #include <time.h>
 
