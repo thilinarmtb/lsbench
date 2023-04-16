@@ -1,5 +1,5 @@
-#include "lsbench-impl.h"
 #include "assert.h"
+#include "lsbench-impl.h"
 
 #if defined(LSBENCH_PARALMOND)
 #include "parAlmond.hpp"
@@ -108,7 +108,8 @@ int paralmond_init() {
   return 0;
 }
 
-void paralmond_bench(double *x, struct csr *A, const double *r, const struct lsbench *cb) {
+void paralmond_bench(double *x, struct csr *A, const double *r,
+                     const struct lsbench *cb) {
   csr_init(A, cb);
 
   struct paralmond_csr *B = (struct paralmond_csr *)A->ptr;
@@ -132,15 +133,17 @@ void paralmond_bench(double *x, struct csr *A, const double *r, const struct lsb
   free(B);
 }
 
-void paralmond_finalize() {
+int paralmond_finalize() {
   if (initialized) {
     delete comm, set_plat, platform, set_amg;
     initialized = 0;
   }
+  return 0;
 }
 
 #else
 int paralmond_init();
-void paralmond_bench(double *x, struct csr *A, const double *r, const struct lsbench *cb);
-void paralmond_finalize();
+int paralmond_finalize();
+void paralmond_bench(double *x, struct csr *A, const double *r,
+                     const struct lsbench *cb);
 #endif

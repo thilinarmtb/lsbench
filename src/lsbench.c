@@ -24,6 +24,8 @@ static lsbench_solver_t str_to_solver(const char *str) {
     return LSBENCH_SOLVER_HYPRE;
   } else if (strcmp(up, "AMGX") == 0) {
     return LSBENCH_SOLVER_AMGX;
+  } else if (strcmp(up, "PARALMOND") == 0) {
+    return LSBENCH_SOLVER_PARALMOND;
   } else {
     warnx("Invalid solver: \"%s\". Defaulting to CUSOLVER.", str);
     return LSBENCH_SOLVER_CUSOLVER;
@@ -151,6 +153,9 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
 #ifdef LSBENCH_AMGX
   amgx_init();
 #endif
+#ifdef LSBENCH_PARALMOND
+  paralmond_init();
+#endif
 
   return cb;
 }
@@ -177,6 +182,10 @@ void lsbench_bench(struct csr *A, const struct lsbench *cb) {
 #ifdef LSBENCH_AMGX
     amgx_bench(x, A, r, cb);
 #endif
+  case LSBENCH_SOLVER_PARALMOND:
+#ifdef LSBENCH_PARALMOND
+    paralmond_bench(x, A, r, cb);
+#endif
     break;
   default:
     errx(EXIT_FAILURE, "Unknown solver: %d.", cb->solver);
@@ -196,6 +205,9 @@ void lsbench_finalize(struct lsbench *cb) {
 #endif
 #ifdef LSBENCH_AMGX
   amgx_finalize();
+#endif
+#ifdef LSBENCH_PARALMOND
+  paralmond_finalize();
 #endif
 
   if (cb)

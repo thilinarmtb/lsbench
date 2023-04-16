@@ -1,7 +1,7 @@
 #ifndef _LSBENCH_
 #define _LSBENCH_
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -9,7 +9,8 @@ typedef enum {
   LSBENCH_SOLVER_NONE = -1,
   LSBENCH_SOLVER_CUSOLVER = 0,
   LSBENCH_SOLVER_HYPRE = 1,
-  LSBENCH_SOLVER_AMGX = 2
+  LSBENCH_SOLVER_AMGX = 2,
+  LSBENCH_SOLVER_PARALMOND = 4
 } lsbench_solver_t;
 
 typedef enum {
@@ -36,7 +37,7 @@ void lsbench_bench(struct csr *A, const struct lsbench *cb);
 
 void lsbench_finalize(struct lsbench *cb);
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 }
 #endif
 

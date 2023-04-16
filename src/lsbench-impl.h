@@ -3,11 +3,8 @@
 
 #include "lsbench.h"
 #include <stdlib.h>
-#if defined(LSBENCH_MPI)
-#include <mpi.h>
-#endif
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -55,8 +52,12 @@ int amgx_finalize();
 void amgx_bench(double *x, struct csr *A, const double *r,
                 const struct lsbench *cb);
 
-#ifdef _cplusplus
+int paralmond_init();
+int paralmond_finalize();
+void paralmond_bench(double *x, struct csr *A, const double *r,
+                     const struct lsbench *cb);
+
+#ifdef __cplusplus
 }
 #endif
-
 #endif
