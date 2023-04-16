@@ -57,7 +57,7 @@ struct csr *lsbench_matrix_read(const struct lsbench *cb) {
   unsigned nnzc = 0, s = 0, e;
   while (s < nnz) {
     arr[nnzc] = arr[s], e = s + 1;
-    while (arr[s].r == arr[e].r && arr[s].c == arr[e].c)
+    while (e < nnz && arr[s].r == arr[e].r && arr[s].c == arr[e].c)
       arr[nnzc].v += arr[e].v, e++;
     s = e, nnzc++;
   }

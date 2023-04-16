@@ -43,13 +43,12 @@ static void csr_init(struct csr *A, const struct lsbench *cb) {
   C.globalColStarts[0] = 0, C.globalColStarts[1] = A->nrows;
 
   // C.nnz, C.entries,
-  assert(A->base == 0);
   C.nnz = A->offs[A->nrows];
   C.entries.malloc(C.nnz);
   for (uint r = 0; r < A->nrows; r++) {
     for (uint j = A->offs[r]; j < A->offs[r + 1]; j++) {
       C.entries[j].row = r;
-      C.entries[j].col = A->cols[j];
+      C.entries[j].col = A->cols[j] - A->base;
       C.entries[j].val = A->vals[j];
     }
   }
@@ -114,7 +113,7 @@ void paralmond_bench(double *x, struct csr *A, const double *r,
 
   struct paralmond_csr *B = (struct paralmond_csr *)A->ptr;
 
-  libp::memory<double> h_r;
+  libp::memory<double> h_r = libp::memory<double>(B->nr);
   for (uint i = 0; i < B->nr; i++)
     h_r[i] = r[i];
   B->d_b->copyFrom(h_r);
@@ -135,7 +134,8 @@ void paralmond_bench(double *x, struct csr *A, const double *r,
 
 int paralmond_finalize() {
   if (initialized) {
-    delete comm, set_plat, platform, set_amg;
+    delete[] comm;
+    delete set_plat, set_amg, platform;
     initialized = 0;
   }
   return 0;
