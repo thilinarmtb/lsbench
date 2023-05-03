@@ -5,7 +5,7 @@ project(cusparse_cholesky VERSION 0.0.1 DESCRIPTION
 option(ENABLE_CUSPARSE "Enable cusaprse support." OFF)
 option(ENABLE_HYPRE "Enable Hypre support." OFF)
 option(ENABLE_AMGX "Enable AmgX support." OFF)
-option(ENABLE_PARALMOND "Enable parAlmond support." ON)
+option(ENABLE_PARALMOND "Enable parAlmond support." OFF)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 set(CMAKE_C_STANDARD 17)
