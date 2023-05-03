@@ -141,23 +141,11 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
          "Either input matrix or solver is not provided ! Try `--help`.");
   }
 
-  // FIXME: Register these init functions so they can be called without the
-  // ifdef.
-#ifdef LSBENCH_CUSPARSE
   cusparse_init();
-#endif
-#ifdef LSBENCH_HYPRE
   hypre_init();
-#endif
-#ifdef LSBENCH_AMGX
   amgx_init();
-#endif
-#ifdef LSBENCH_CHOLMOD
   cholmod_init();
-#endif
-#ifdef LSBENCH_PARALMOND
   paralmond_init();
-#endif
 
   return cb;
 }
@@ -174,29 +162,19 @@ void lsbench_bench(struct csr *A, const struct lsbench *cb) {
 
   switch (cb->solver) {
   case LSBENCH_SOLVER_CUSOLVER:
-#ifdef LSBENCH_CUSPARSE
     cusparse_bench(x, A, r, cb);
-#endif
     break;
   case LSBENCH_SOLVER_HYPRE:
-#ifdef LSBENCH_HYPRE
     hypre_bench(x, A, r, cb);
-#endif
     break;
   case LSBENCH_SOLVER_AMGX:
-#ifdef LSBENCH_AMGX
     amgx_bench(x, A, r, cb);
-#endif
     break;
   case LSBENCH_SOLVER_CHOLMOD:
-#ifdef LSBENCH_CHOLMOD
     cholmod_bench(x, A, r, cb);
-#endif
     break;
   case LSBENCH_SOLVER_PARALMOND:
-#ifdef LSBENCH_PARALMOND
     paralmond_bench(x, A, r, cb);
-#endif
     break;
   default:
     errx(EXIT_FAILURE, "Unknown solver: %d.", cb->solver);
@@ -207,21 +185,11 @@ void lsbench_bench(struct csr *A, const struct lsbench *cb) {
 }
 
 void lsbench_finalize(struct lsbench *cb) {
-#ifdef LSBENCH_CUSPARSE
   cusparse_finalize();
-#endif
-#ifdef LSBENCH_HYPRE
   hypre_finalize();
-#endif
-#ifdef LSBENCH_AMGX
   amgx_finalize();
-#endif
-#ifdef LSBENCH_CHOLMOD
   cholmod_finalize();
-#endif
-#ifdef LSBENCH_PARALMOND
   paralmond_finalize();
-#endif
 
   if (cb)
     tfree(cb->matrix);

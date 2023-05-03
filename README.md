@@ -3,7 +3,8 @@
 `lsbench` is a repository containing benchmark codes for various high performant
 linear solvers on CPUs and GPUs. It can read a sparse matrix and solve it using
 `cuSparse`, `AmgX`, `Hypre` or `CHOLMOD`. An example on how to use the API is in
-`bin/driver.c`. A few test matrices are available in `tests/` directory.
+`bin/driver.c`. A few test matrices are available in `tests/` directory. Currently,
+all the benchmarks are performend in double precision.
 
 ## Building lsbench
 
@@ -43,6 +44,8 @@ export PATH=${PATH}/<lsbench-install-dir>/bin
 ## Running the benchmarks
 
 Once the benchmarks are built, they can be run using the following command:
+Do `driver --help` to see available options (not everything is implemented
+right now).
 ```sh
-driver --solver cholmod --test <matrix-file>
+driver --solver cholmod --test ./tests/I1_05x05.txt --verbose=1
 ```
