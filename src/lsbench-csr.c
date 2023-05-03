@@ -26,10 +26,10 @@ static int cmp_coo(const void *va, const void *vb) {
   return 0;
 }
 
-struct csr *lsbench_matrix_read(const struct lsbench *cb) {
-  FILE *fp = fopen(cb->matrix, "r");
+struct csr *lsbench_matrix_read(const char *fname) {
+  FILE *fp = fopen(fname, "r");
   if (!fp)
-    err(EXIT_FAILURE, "Unable to open file \"%s\" for reading", cb->matrix);
+    err(EXIT_FAILURE, "Unable to open file \"%s\" for reading", fname);
 
   // Read total number of non-zero entries.
   unsigned nnz, base;

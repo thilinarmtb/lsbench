@@ -5,7 +5,7 @@
 int main(int argc, char **argv) {
   struct lsbench *cb = lsbench_init(argc, argv);
 
-  struct csr *A = lsbench_matrix_read(cb);
+  struct csr *A = lsbench_matrix_read(lsbench_get_matrix_name(cb));
   lsbench_bench(A, cb);
   lsbench_matrix_free(A);
 

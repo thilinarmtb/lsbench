@@ -52,6 +52,11 @@ int amgx_finalize();
 void amgx_bench(double *x, struct csr *A, const double *r,
                 const struct lsbench *cb);
 
+int cholmod_init();
+int cholmod_finalize();
+void cholmod_bench(double *x, struct csr *A, const double *r,
+                   const struct lsbench *cb);
+
 int paralmond_init();
 int paralmond_finalize();
 void paralmond_bench(double *x, struct csr *A, const double *r,

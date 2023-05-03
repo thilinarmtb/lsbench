@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MAX_BACKEND 32
-
 static void str_to_upper(char *up, const char *str) {
   size_t n = strnlen(str, BUFSIZ);
   for (unsigned i = 0; i < n; i++)
@@ -24,11 +22,13 @@ static lsbench_solver_t str_to_solver(const char *str) {
     return LSBENCH_SOLVER_HYPRE;
   } else if (strcmp(up, "AMGX") == 0) {
     return LSBENCH_SOLVER_AMGX;
+  } else if (strcmp(up, "CHOLMOD") == 0) {
+    return LSBENCH_SOLVER_CHOLMOD;
   } else if (strcmp(up, "PARALMOND") == 0) {
     return LSBENCH_SOLVER_PARALMOND;
   } else {
-    warnx("Invalid solver: \"%s\". Defaulting to CUSOLVER.", str);
-    return LSBENCH_SOLVER_CUSOLVER;
+    warnx("Invalid solver: \"%s\". Defaulting to HYPRE.", str);
+    return LSBENCH_SOLVER_HYPRE;
   }
 }
 
@@ -68,15 +68,13 @@ static void print_help(int argc, char *argv[]) {
   printf("Usage: %s [OPTIONS]\n");
   printf("Options:\n");
   printf("  --matrix <FILE>\n");
-  printf("  --solver <SOLVER>, Values: hypre, amgx, cusolver\n");
+  printf("  --solver <SOLVER>, Values: cusolver, hypre, amgx, cholmod\n");
   printf("  --ordering <ORDERING>, Values: RCM, AMD, METIS\n");
   printf("  --precision <PRECISION>, Values: FP64, FP32, FP16\n");
   printf("  --verbose <VERBOSITY>, Values: 0, 1, 2, ...\n");
   printf("  --trials <TRIALS>, Values: 1, 2, ...\n");
   printf("  --help\n");
 }
-
-static struct backend *backends[MAX_BACKEND];
 
 struct lsbench *lsbench_init(int argc, char *argv[]) {
   // Supported command line options.
@@ -96,10 +94,10 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
   cb->solver = LSBENCH_SOLVER_NONE;
   cb->precision = LSBENCH_PRECISION_FP64;
   cb->verbose = 0;
-  cb->trials = 50;
+  cb->trials = 100;
 
-  char bfr[BUFSIZ];
   // Parse the command line arguments.
+  char bfr[BUFSIZ];
   for (;;) {
     int c = getopt_long(argc, argv, "", long_options, NULL);
     if (c == -1)
@@ -143,7 +141,8 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
          "Either input matrix or solver is not provided ! Try `--help`.");
   }
 
-  // FIXME: Register these init functions.
+  // FIXME: Register these init functions so they can be called without the
+  // ifdef.
 #ifdef LSBENCH_CUSPARSE
   cusparse_init();
 #endif
@@ -153,6 +152,9 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
 #ifdef LSBENCH_AMGX
   amgx_init();
 #endif
+#ifdef LSBENCH_CHOLMOD
+  cholmod_init();
+#endif
 #ifdef LSBENCH_PARALMOND
   paralmond_init();
 #endif
@@ -160,13 +162,16 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
   return cb;
 }
 
+const char *lsbench_get_matrix_name(struct lsbench *cb) {
+  return (const char *)cb->matrix;
+}
+
 void lsbench_bench(struct csr *A, const struct lsbench *cb) {
   unsigned m = A->nrows;
-  double *x = tcalloc(double, m), *r = tcalloc(double, m);
+  double *x = tcalloc(double, 2 * m), *r = x + m;
   for (unsigned i = 0; i < m; i++)
     r[i] = i;
 
-  // FIXME: Register these bench functions.
   switch (cb->solver) {
   case LSBENCH_SOLVER_CUSOLVER:
 #ifdef LSBENCH_CUSPARSE
@@ -182,6 +187,12 @@ void lsbench_bench(struct csr *A, const struct lsbench *cb) {
 #ifdef LSBENCH_AMGX
     amgx_bench(x, A, r, cb);
 #endif
+    break;
+  case LSBENCH_SOLVER_CHOLMOD:
+#ifdef LSBENCH_CHOLMOD
+    cholmod_bench(x, A, r, cb);
+#endif
+    break;
   case LSBENCH_SOLVER_PARALMOND:
 #ifdef LSBENCH_PARALMOND
     paralmond_bench(x, A, r, cb);
@@ -192,11 +203,10 @@ void lsbench_bench(struct csr *A, const struct lsbench *cb) {
     break;
   }
 
-  tfree(x), tfree(r);
+  tfree(x);
 }
 
 void lsbench_finalize(struct lsbench *cb) {
-  // FIXME: Register these finalize functions.
 #ifdef LSBENCH_CUSPARSE
   cusparse_finalize();
 #endif
@@ -206,6 +216,9 @@ void lsbench_finalize(struct lsbench *cb) {
 #ifdef LSBENCH_AMGX
   amgx_finalize();
 #endif
+#ifdef LSBENCH_CHOLMOD
+  cholmod_finalize();
+#endif
 #ifdef LSBENCH_PARALMOND
   paralmond_finalize();
 #endif
@@ -214,5 +227,3 @@ void lsbench_finalize(struct lsbench *cb) {
     tfree(cb->matrix);
   tfree(cb);
 }
-
-#undef MAX_BACKEND
