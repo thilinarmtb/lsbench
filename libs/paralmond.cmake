@@ -25,6 +25,5 @@ set(LIBP_SOURCE_DIR ${paranumal_content_SOURCE_DIR})
 add_subdirectory(${LIBP_SOURCE_DIR}/libs ${CMAKE_BINARY_DIR}/libparanumal/libs)
 
 add_dependencies(lsbench parAlmond linearSolver linAlg core libocca)
-target_link_libraries(lsbench PRIVATE parAlmond linearSolver
-  linAlg core libocca)
+target_link_libraries(lsbench PRIVATE parAlmond linearSolver linAlg core libocca)
 target_include_directories(lsbench PRIVATE ${LIBP_SOURCE_DIR}/include)

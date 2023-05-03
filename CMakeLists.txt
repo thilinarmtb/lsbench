@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 project(cusparse_cholesky VERSION 0.0.1 DESCRIPTION
   "Benchmark linear solve times" LANGUAGES C CXX)
 
-option(ENABLE_CUSPARSE "Enable cusaprse support." OFF)
+option(ENABLE_CUSPARSE "Enable cusparse support." OFF)
 option(ENABLE_HYPRE "Enable Hypre support." OFF)
 option(ENABLE_AMGX "Enable AmgX support." OFF)
 option(ENABLE_CHOLMOD "Enable Cholmod support." ON)

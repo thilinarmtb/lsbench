@@ -1,7 +1,8 @@
 include(ExternalProject)
 
-set(AMGX_PREFIX_DIR ${CMAKE_CURRENT_BINARY_DIR}/amgx-build)
-set(AMGX_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/amgx)
+set(AMGX_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+set(AMGX_LIBDIR ${AMGX_INSTALL_DIR}/lib)
+set(AMGX_INCDIR ${AMGX_INSTALL_DIR}/include)
 
 find_package(CUDAToolkit 11.0 REQUIRED)
 
@@ -17,8 +18,8 @@ ExternalProject_Add(AMGX_DEVICE
     -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
 
 add_dependencies(lsbench AMGX_DEVICE)
-target_link_libraries(lsbench PUBLIC
-  ${AMGX_INSTALL_DIR}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}amgxsh${CMAKE_SHARED_LIBRARY_SUFFIX}
-  ${AMGX_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}amgx${CMAKE_STATIC_LIBRARY_SUFFIX}
+target_link_libraries(lsbench PRIVATE
+  ${AMGX_LIBDIR}/${CMAKE_SHARED_LIBRARY_PREFIX}amgxsh${CMAKE_SHARED_LIBRARY_SUFFIX}
+  ${AMGX_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}amgx${CMAKE_STATIC_LIBRARY_SUFFIX}
   CUDA::cudart CUDA::curand CUDA::cublas CUDA::cusparse CUDA::cusolver) 
-target_include_directories(lsbench PRIVATE ${AMGX_INSTALL_DIR}/include)
+target_include_directories(lsbench PRIVATE ${AMGX_INCDIR})
