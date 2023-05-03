@@ -1,10 +1,9 @@
 #include "lsbench-impl.h"
+
+#if defined(LSBENCH_CUSPARSE)
 #include <cuda_runtime.h>
 #include <cusolverSp.h>
 #include <cusparse.h>
-#include <err.h>
-#include <stdio.h>
-#include <time.h>
 
 #define chk_solver(err)                                                        \
   {                                                                            \
@@ -45,7 +44,7 @@ struct cusparse_csr {
   double *d_val, *h_val;
 };
 
-static void csr_init(struct csr *A, const struct lsbench *cb) {
+static struct cusparse *csr_init(struct csr *A, const struct lsbench *cb) {
   struct cusparse_csr *B = tcalloc(struct cusparse_csr, 1);
 
   // Create desrciptor for M.
@@ -122,20 +121,18 @@ static void csr_init(struct csr *A, const struct lsbench *cb) {
                     cudaMemcpyHostToDevice));
   tfree(map);
 
-  A->ptr = (void *)B;
+  return B;
 }
 
-static void csr_finalize(struct csr *A) {
-  struct cusparse_csr *B = (struct cusparse_csr *)A->ptr;
-  if (B) {
-    chk_sparse(cusparseDestroyMatDescr(B->M));
-    chk_rt(cudaFree((void *)B->d_off));
-    chk_rt(cudaFree((void *)B->d_col));
-    chk_rt(cudaFree((void *)B->d_val));
-    tfree(B->h_Q), tfree(B->h_off), tfree(B->h_col), tfree(B->h_val);
+static void csr_finalize(struct cusparse_csr *A) {
+  if (A) {
+    chk_sparse(cusparseDestroyMatDescr(A->M));
+    chk_rt(cudaFree((void *)A->d_off));
+    chk_rt(cudaFree((void *)A->d_col));
+    chk_rt(cudaFree((void *)A->d_val));
+    tfree(A->h_Q), tfree(A->h_off), tfree(A->h_col), tfree(A->h_val);
   }
-
-  tfree(B), A->ptr = NULL;
+  tfree(A);
 }
 
 int cusparse_init() {
@@ -150,24 +147,26 @@ int cusparse_init() {
   chk_sparse(cusparseSetStream(sparse, stream));
 
   initialized = 1;
-
   return 0;
 }
 
 int cusparse_finalize() {
-  if (initialized) {
-    chk_solver(cusolverSpDestroy(solver));
-    chk_sparse(cusparseDestroy(sparse));
-    chk_rt(cudaStreamDestroy(stream));
-    initialized = 0;
-  }
+  if (!initialized)
+    return 1;
 
+  chk_solver(cusolverSpDestroy(solver));
+  chk_sparse(cusparseDestroy(sparse));
+  chk_rt(cudaStreamDestroy(stream));
+  initialized = 0;
   return 0;
 }
 
-void cusparse_bench(double *x, struct csr *A, const double *r,
-                    const struct lsbench *cb) {
-  csr_init(A, cb);
+int cusparse_bench(double *x, struct csr *A, const double *r,
+                   const struct lsbench *cb) {
+  if (!initialized)
+    return 1;
+
+  struct cusparse_csr *B = csr_init(A, cb);
 
   unsigned m = A->nrows, nnz = A->offs[m];
   struct cusparse_csr *B = (struct cusparse_csr *)A->ptr;
@@ -212,5 +211,18 @@ void cusparse_bench(double *x, struct csr *A, const double *r,
   printf("%s,%u,%u,%u,%u,%d,%.15lf\n", cb->matrix, m, nnz, cb->trials,
          cb->solver, cb->ordering, (double)t / CLOCKS_PER_SEC);
 
-  csr_finalize(A);
+  csr_finalize(B);
+  return 0;
 }
+
+#define chk_solver
+#define chk_sparse
+#define chk_rt
+#else
+int cusparse_init() { return 1; }
+int cusparse_finalize() { return 1; }
+int cusparse_bench(double *x, struct csr *A, const double *r,
+                   const struct lsbench *cb) {
+  return 1;
+}
+#endif

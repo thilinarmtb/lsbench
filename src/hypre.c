@@ -1,7 +1,4 @@
 #include "lsbench-impl.h"
-#include <err.h>
-#include <stdio.h>
-#include <time.h>
 
 #if defined(LSBENCH_HYPRE)
 #include <HYPRE.h>
@@ -28,7 +25,7 @@ struct hypre_csr {
   HYPRE_IJVector b, x;
 };
 
-static void csr_init(struct csr *A, const struct lsbench *cb) {
+static struct hypre_csr *csr_init(struct csr *A, const struct lsbench *cb) {
   struct hypre_csr *B = tcalloc(struct hypre_csr, 1);
 
   int comm = 0;
@@ -99,17 +96,16 @@ static void csr_init(struct csr *A, const struct lsbench *cb) {
   HYPRE_IJMatrixGetObject(B->A, (void **)&par_A);
   HYPRE_BoomerAMGSetup(solver, par_A, par_b, par_x);
 
-  A->ptr = (void *)B;
+  return B;
 }
 
-static void csr_finalize(struct csr *A) {
-  struct hypre_csr *B = (struct hypre_csr *)A->ptr;
-  if (B) {
-    HYPRE_IJMatrixDestroy(B->A);
-    HYPRE_IJVectorDestroy(B->x);
-    HYPRE_IJVectorDestroy(B->b);
+static void csr_finalize(struct hypre_csr *A) {
+  if (A) {
+    HYPRE_IJMatrixDestroy(A->A);
+    HYPRE_IJVectorDestroy(A->x);
+    HYPRE_IJVectorDestroy(A->b);
   }
-  tfree(B), A->ptr = NULL;
+  tfree(A);
 }
 
 int hypre_init() {
@@ -191,15 +187,16 @@ int hypre_init() {
 
   HYPRE_BoomerAMGSetPrintLevel(solver, 3);
 
-  // Initialize the solver;
   initialized = 1;
-
   return 0;
 }
 
-void hypre_bench(double *x, struct csr *A, const double *r,
-                 const struct lsbench *cb) {
-  csr_init(A, cb);
+int hypre_bench(double *x, struct csr *A, const double *r,
+                const struct lsbench *cb) {
+  if (!initialized)
+    return 1;
+
+  struct hypre_csr *B = csr_init(A, cb);
 
   unsigned nr = A->nrows, nnz = A->offs[nr];
   HYPRE_Real *d_r, *d_x;
@@ -236,6 +233,7 @@ void hypre_bench(double *x, struct csr *A, const double *r,
     HYPRE_BoomerAMGSolve(solver, par_A, par_b, par_x);
   chk_rt(cudaDeviceSynchronize());
   t = clock() - t;
+  // FIXME: Print the solve times.
 
   HYPRE_IJVectorGetValues(B->x, nr, NULL, d_x);
   chk_rt(cudaMemcpy(tmp, d_x, nr * sizeof(HYPRE_Real), cudaMemcpyDeviceToHost));
@@ -245,26 +243,27 @@ void hypre_bench(double *x, struct csr *A, const double *r,
   for (unsigned i = 0; i < nr; i++)
     x[i] = tmp[i];
 
-  printf("x =\n");
-  for (unsigned i = 0; i < nr; i++)
-    printf("%lf\n", x[i]);
-
-  csr_finalize(A), tfree(tmp), csr_finalize(A);
+  csr_finalize(B), tfree(tmp), csr_finalize(A);
+  return 0;
 }
 
 int hypre_finalize() {
-  if (initialized) {
-    HYPRE_BoomerAMGDestroy(solver);
-    HYPRE_Finalize();
-    initialized = 0;
-  }
+  if (!initialized)
+    return 1;
+
+  HYPRE_BoomerAMGDestroy(solver);
+  HYPRE_Finalize();
+  initialized = 0;
   return 0;
 }
-#else
-int hypre_init();
-void hypre_bench(double *x, struct csr *A, const double *r,
-                 const struct lsbench *cb);
-void hypre_finalize();
-#endif
 
+#undef chk_rt
 #undef NPARAM
+#else
+int hypre_init() { return 1; }
+int hypre_finalize() { return 1; }
+int hypre_bench(double *x, struct csr *A, const double *r,
+                const struct lsbench *cb) {
+  return 1;
+}
+#endif

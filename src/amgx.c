@@ -1,10 +1,8 @@
 #include "lsbench-impl.h"
+
+#if defined(LSBENCH_AMGX)
 #include <amgx_c.h>
-#include <assert.h>
 #include <cuda_runtime.h>
-#include <err.h>
-#include <stdio.h>
-#include <time.h>
 
 #define chk_rt(err)                                                            \
   {                                                                            \
@@ -26,7 +24,7 @@ struct amgx_csr {
   AMGX_matrix_handle A;
 };
 
-static void csr_init(struct csr *A, const struct lsbench *cb) {
+static struct amgx_csr *csr_init(struct csr *A, const struct lsbench *cb) {
   struct amgx_csr *B = tcalloc(struct amgx_csr, 1);
 
   AMGX_SAFE_CALL(AMGX_vector_create(&B->x, resource, mode));
@@ -54,20 +52,19 @@ static void csr_init(struct csr *A, const struct lsbench *cb) {
   AMGX_SAFE_CALL(AMGX_vector_bind(B->x, B->A));
   AMGX_SAFE_CALL(AMGX_vector_bind(B->b, B->A));
 
-  A->ptr = (void *)B;
+  return B;
 }
 
-static void csr_finalize(struct csr *A) {
-  struct amgx_csr *B = (struct amgx_csr *)A->ptr;
-  if (B) {
-    AMGX_SAFE_CALL(AMGX_vector_destroy(B->x));
-    AMGX_SAFE_CALL(AMGX_vector_destroy(B->b));
-    AMGX_SAFE_CALL(AMGX_matrix_destroy(B->A));
+static void csr_finalize(struct amgx_csr *A) {
+  if (A) {
+    AMGX_SAFE_CALL(AMGX_vector_destroy(A->x));
+    AMGX_SAFE_CALL(AMGX_vector_destroy(A->b));
+    AMGX_SAFE_CALL(AMGX_matrix_destroy(A->A));
   }
-  tfree(B), A->ptr = NULL;
+  tfree(A);
 }
 
-void amgx_print(const char *msg, int length) { printf("%s", msg); }
+static void amgx_print(const char *msg, int length) { printf("%s", msg); }
 
 int amgx_init() {
   if (initialized)
@@ -95,13 +92,15 @@ int amgx_init() {
   AMGX_SAFE_CALL(AMGX_solver_create(&solver, resource, mode, config));
 
   initialized = 1;
-
   return 0;
 }
 
-void amgx_bench(double *x, struct csr *A, const double *r,
-                const struct lsbench *cb) {
-  csr_init(A, cb);
+int amgx_bench(double *x, struct csr *A, const double *r,
+               const struct lsbench *cb) {
+  if (!initialized)
+    return 1;
+
+  struct amgx_csr *B = csr_init(A, cb);
 
   unsigned nr = A->nrows;
   float *rf = tcalloc(float, nr);
@@ -133,18 +132,28 @@ void amgx_bench(double *x, struct csr *A, const double *r,
   for (unsigned i = 0; i < nr; i++)
     printf("%lf\n", x[i]);
 
-  csr_finalize(A), tfree(rf), tfree(xf);
+  csr_finalize(B), tfree(rf), tfree(xf);
+  return 0;
 }
 
 int amgx_finalize() {
-  if (initialized) {
-    AMGX_solver_destroy(solver);
-    AMGX_resources_destroy(resource);
-    AMGX_SAFE_CALL(AMGX_config_destroy(config));
-    AMGX_SAFE_CALL(AMGX_finalize_plugins());
-    AMGX_SAFE_CALL(AMGX_finalize());
-    initialized = 0;
-  }
+  if (!initialized)
+    return 1;
 
+  AMGX_solver_destroy(solver);
+  AMGX_resources_destroy(resource);
+  AMGX_SAFE_CALL(AMGX_config_destroy(config));
+  AMGX_SAFE_CALL(AMGX_finalize_plugins());
+  AMGX_SAFE_CALL(AMGX_finalize());
+
+  initialized = 0;
   return 0;
 }
+
+#undef chk_rt
+#else
+int amgx_init() { return 1; }
+int amgx_finalize() { return 1; }
+int amgx_bench(double *x, struct csr *A, const double *r,
+               const struct lsbench *cb) {}
+#endif

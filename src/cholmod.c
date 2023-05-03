@@ -13,12 +13,12 @@ struct cholmod_csr {
 };
 
 int cholmod_init() {}
+int cholmod_finalize() {}
 void cholmod_bench(double *x, struct csr *A, const double *r,
                    const struct lsbench *cb) {}
-int cholmod_finalize() {}
 #else
-int cholmod_init() {}
+int cholmod_init() { return 1; }
+int cholmod_finalize() { return 1; }
 void cholmod_bench(double *x, struct csr *A, const double *r,
                    const struct lsbench *cb) {}
-int cholmod_finalize() {}
 #endif

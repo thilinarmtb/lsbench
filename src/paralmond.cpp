@@ -1,5 +1,5 @@
-#include "assert.h"
 #include "lsbench-impl.h"
+#include <assert.h>
 
 #if defined(LSBENCH_PARALMOND)
 #include "parAlmond.hpp"
@@ -17,7 +17,7 @@ struct paralmond_csr {
   uint nr;
 };
 
-static void csr_init(struct csr *A, const struct lsbench *cb) {
+static struct paralmond_csr *csr_init(struct csr *A, const struct lsbench *cb) {
   struct paralmond_csr *B = tcalloc(struct paralmond_csr, 1);
 
   int size, rank;
@@ -75,12 +75,20 @@ static void csr_init(struct csr *A, const struct lsbench *cb) {
   B->d_b = new libp::deviceMemory<double>(device.malloc<double>(A->nrows));
   B->d_x = new libp::deviceMemory<double>(device.malloc<double>(A->nrows));
 
-  A->ptr = (void *)B;
+  return B;
+}
+
+static void csr_finalize(struct paralmond_csr *A) {
+  if (A) {
+    delete A->d_b, A->d_x;
+    delete A->parAlmond;
+  }
+  tfree(A);
 }
 
 int paralmond_init() {
   if (initialized)
-    return 0;
+    return 1;
 
   // Setup the libParanumal global MPI communicator.
   MPI_Init(NULL, NULL);
@@ -107,11 +115,12 @@ int paralmond_init() {
   return 0;
 }
 
-void paralmond_bench(double *x, struct csr *A, const double *r,
-                     const struct lsbench *cb) {
-  csr_init(A, cb);
+int paralmond_bench(double *x, struct csr *A, const double *r,
+                    const struct lsbench *cb) {
+  if (!initialized)
+    return 1;
 
-  struct paralmond_csr *B = (struct paralmond_csr *)A->ptr;
+  struct paralmond_csr *B = csr_init(A, cb);
 
   libp::memory<double> h_r = libp::memory<double>(B->nr);
   for (uint i = 0; i < B->nr; i++)
@@ -127,23 +136,22 @@ void paralmond_bench(double *x, struct csr *A, const double *r,
   for (unsigned i = 0; i < B->nr; i++)
     x[i] = xx[i];
 
-  delete B->d_b, B->d_x;
-  delete B->parAlmond;
-  free(B);
+  return 0;
 }
 
 int paralmond_finalize() {
-  if (initialized) {
-    delete[] comm;
-    delete set_plat, set_amg, platform;
-    initialized = 0;
-  }
+  if (!initialized)
+    return 1;
+
+  delete[] comm;
+  delete set_plat, set_amg, platform;
+  initialized = 0;
   return 0;
 }
 
 #else
-int paralmond_init();
-int paralmond_finalize();
-void paralmond_bench(double *x, struct csr *A, const double *r,
-                     const struct lsbench *cb);
+int paralmond_init() { return 1; }
+int paralmond_finalize() { return 1; }
+int paralmond_bench(double *x, struct csr *A, const double *r,
+                    const struct lsbench *cb) {}
 #endif

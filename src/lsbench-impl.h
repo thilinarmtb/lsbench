@@ -2,7 +2,10 @@
 #define _LSBENCH_IMPL_
 
 #include "lsbench.h"
+#include <err.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,7 +23,6 @@ struct csr {
   unsigned nrows, base;
   unsigned *offs, *cols;
   double *vals;
-  void *ptr;
 };
 
 #define tcalloc(T, n) (T *)calloc(n, sizeof(T))
@@ -39,18 +41,18 @@ struct backend {
 
 int cusparse_init();
 int cusparse_finalize();
-void cusparse_bench(double *x, struct csr *A, const double *r,
-                    const struct lsbench *cb);
+int cusparse_bench(double *x, struct csr *A, const double *r,
+                   const struct lsbench *cb);
 
 int hypre_init();
 int hypre_finalize();
-void hypre_bench(double *x, struct csr *A, const double *r,
-                 const struct lsbench *cb);
+int hypre_bench(double *x, struct csr *A, const double *r,
+                const struct lsbench *cb);
 
 int amgx_init();
 int amgx_finalize();
-void amgx_bench(double *x, struct csr *A, const double *r,
-                const struct lsbench *cb);
+int amgx_bench(double *x, struct csr *A, const double *r,
+               const struct lsbench *cb);
 
 int cholmod_init();
 int cholmod_finalize();
@@ -59,8 +61,8 @@ void cholmod_bench(double *x, struct csr *A, const double *r,
 
 int paralmond_init();
 int paralmond_finalize();
-void paralmond_bench(double *x, struct csr *A, const double *r,
-                     const struct lsbench *cb);
+int paralmond_bench(double *x, struct csr *A, const double *r,
+                    const struct lsbench *cb);
 
 #ifdef __cplusplus
 }
