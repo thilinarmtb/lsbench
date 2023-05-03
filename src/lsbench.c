@@ -81,10 +81,10 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
   static struct option long_options[] = {
       {"matrix", required_argument, 0, 10},
       {"solver", required_argument, 0, 20},
-      {"ordering", required_argument, 0, 30},
-      {"precision", required_argument, 0, 40},
-      {"verbose", required_argument, 0, 50},
-      {"trials", required_argument, 0, 60},
+      {"ordering", optional_argument, 0, 30},
+      {"precision", optional_argument, 0, 40},
+      {"verbose", optional_argument, 0, 50},
+      {"trials", optional_argument, 0, 60},
       {"help", no_argument, 0, 70},
       {0, 0, 0, 0}};
 

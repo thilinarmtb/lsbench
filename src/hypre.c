@@ -208,7 +208,6 @@ int hypre_bench(double *x, struct csr *A, const double *r,
     tmp[i] = r[i];
   chk_rt(cudaMemcpy(d_r, tmp, nr * sizeof(HYPRE_Real), cudaMemcpyHostToDevice));
 
-  struct hypre_csr *B = (struct hypre_csr *)A->ptr;
   HYPRE_IJVectorUpdateValues(B->x, nr, NULL, d_x, 1);
   HYPRE_IJVectorUpdateValues(B->b, nr, NULL, d_r, 1);
 
@@ -243,7 +242,7 @@ int hypre_bench(double *x, struct csr *A, const double *r,
   for (unsigned i = 0; i < nr; i++)
     x[i] = tmp[i];
 
-  csr_finalize(B), tfree(tmp), csr_finalize(A);
+  csr_finalize(B), tfree(tmp);
   return 0;
 }
 

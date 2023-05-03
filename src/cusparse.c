@@ -44,7 +44,7 @@ struct cusparse_csr {
   double *d_val, *h_val;
 };
 
-static struct cusparse *csr_init(struct csr *A, const struct lsbench *cb) {
+static struct cusparse_csr *csr_init(struct csr *A, const struct lsbench *cb) {
   struct cusparse_csr *B = tcalloc(struct cusparse_csr, 1);
 
   // Create desrciptor for M.
@@ -166,15 +166,12 @@ int cusparse_bench(double *x, struct csr *A, const double *r,
   if (!initialized)
     return 1;
 
-  struct cusparse_csr *B = csr_init(A, cb);
-
   unsigned m = A->nrows, nnz = A->offs[m];
-  struct cusparse_csr *B = (struct cusparse_csr *)A->ptr;
-
   double *d_r, *d_x;
   chk_rt(cudaMalloc((void **)&d_r, m * sizeof(double)));
   chk_rt(cudaMalloc((void **)&d_x, m * sizeof(double)));
 
+  struct cusparse_csr *B = csr_init(A, cb);
   double *tmp = tcalloc(double, m);
   for (unsigned i = 0; i < m; i++)
     tmp[i] = r[B->h_Q[i]];
@@ -215,9 +212,9 @@ int cusparse_bench(double *x, struct csr *A, const double *r,
   return 0;
 }
 
-#define chk_solver
-#define chk_sparse
-#define chk_rt
+#undef chk_solver
+#undef chk_sparse
+#undef chk_rt
 #else
 int cusparse_init() { return 1; }
 int cusparse_finalize() { return 1; }

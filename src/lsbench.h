@@ -21,6 +21,7 @@ typedef enum {
 } lsbench_precision_t;
 
 typedef enum {
+  LSBENCH_ORDERING_NONE = -1,
   LSBENCH_ORDERING_RCM = 0,
   LSBENCH_ORDERING_AMD = 1,
   LSBENCH_ORDERING_METIS = 2
