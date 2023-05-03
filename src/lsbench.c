@@ -27,8 +27,8 @@ static lsbench_solver_t str_to_solver(const char *str) {
   } else if (strcmp(up, "PARALMOND") == 0) {
     return LSBENCH_SOLVER_PARALMOND;
   } else {
-    warnx("Invalid solver: \"%s\". Defaulting to HYPRE.", str);
-    return LSBENCH_SOLVER_HYPRE;
+    warnx("Invalid solver: \"%s\". Defaulting to CHOLMOD.", str);
+    return LSBENCH_SOLVER_CHOLMOD;
   }
 }
 
@@ -43,8 +43,8 @@ static lsbench_ordering_t str_to_ordering(const char *str) {
   } else if (strcmp(up, "METIS") == 0) {
     return LSBENCH_ORDERING_METIS;
   } else {
-    warnx("Invalid ordering: \"%s\". Defaulting to RCM.", str);
-    return LSBENCH_ORDERING_RCM;
+    warnx("Invalid ordering: \"%s\". Defaulting to AMD.", str);
+    return LSBENCH_ORDERING_AMD;
   }
 }
 
@@ -90,11 +90,7 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
 
   // Create the struct and set defauls.
   struct lsbench *cb = tcalloc(struct lsbench, 1);
-  cb->matrix = NULL;
-  cb->solver = LSBENCH_SOLVER_NONE;
-  cb->precision = LSBENCH_PRECISION_FP64;
-  cb->verbose = 0;
-  cb->trials = 100;
+  cb->matrix = NULL, cb->verbose = 0, cb->trials = 100;
 
   // Parse the command line arguments.
   char bfr[BUFSIZ];
@@ -135,11 +131,11 @@ struct lsbench *lsbench_init(int argc, char *argv[]) {
     }
   }
 
-  // Sanity checks
-  if (cb->matrix == NULL || cb->solver == LSBENCH_SOLVER_NONE) {
-    errx(EXIT_FAILURE,
-         "Either input matrix or solver is not provided ! Try `--help`.");
-  }
+  // Sanity checks and check for things which are not yet implemented.
+  if (cb->matrix == NULL)
+    errx(EXIT_FAILURE, "Input matrix file not provided. Try `--help`.");
+  if (cb->precision != LSBENCH_PRECISION_FP64)
+    errx(EXIT_FAILURE, "Precisions other than FP64 are not implemented yet.");
 
   cusparse_init();
   hypre_init();
