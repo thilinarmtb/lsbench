@@ -153,5 +153,7 @@ int paralmond_finalize() {
 int paralmond_init() { return 1; }
 int paralmond_finalize() { return 1; }
 int paralmond_bench(double *x, struct csr *A, const double *r,
-                    const struct lsbench *cb) {}
+                    const struct lsbench *cb) {
+  return 1;
+}
 #endif
