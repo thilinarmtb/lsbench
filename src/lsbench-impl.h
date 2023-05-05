@@ -64,6 +64,9 @@ int paralmond_finalize();
 int paralmond_bench(double *x, struct csr *A, const double *r,
                     const struct lsbench *cb);
 
+int ginkgo_bench(double *x, struct csr *A, const double *r,
+                 const struct lsbench *cb);
+
 #ifdef __cplusplus
 }
 #endif
