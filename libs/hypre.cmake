@@ -1,6 +1,7 @@
 include(ExternalProject)
 
 set(HYPRE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+set(HYPRE_SOURCE_DIR ${CMAKE_BINARY_DIR}/3rd_party/hypre)
 set(HYPRE_LIBDIR ${HYPRE_INSTALL_DIR}/lib)
 set(HYPRE_INCDIR ${HYPRE_INSTALL_DIR}/include)
 
@@ -16,6 +17,7 @@ endif()
 
 ExternalProject_Add(HYPRE_DEVICE
   URL https://github.com/hypre-space/hypre/archive/refs/tags/v2.27.0.tar.gz
+  SOURCE_DIR ${HYPRE_SOURCE_DIR}
   SOURCE_SUBDIR "src"
   BUILD_ALWAYS ON
   CMAKE_CACHE_ARGS -DHYPRE_CUDA_SM:STRING=${HYPRE_CUDA_SM}

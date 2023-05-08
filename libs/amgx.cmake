@@ -1,6 +1,7 @@
 include(ExternalProject)
 
 set(AMGX_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+set(AMGX_SOURCE_DIR ${CMAKE_BINARY_DIR}/3rd_party/amgx)
 set(AMGX_LIBDIR ${AMGX_INSTALL_DIR}/lib)
 set(AMGX_INCDIR ${AMGX_INSTALL_DIR}/include)
 
@@ -8,6 +9,7 @@ find_package(CUDAToolkit 11.0 REQUIRED)
 
 ExternalProject_Add(AMGX_DEVICE
   URL https://github.com/NVIDIA/AMGX/archive/refs/tags/v2.2.0.tar.gz
+  SOURCE_DIR ${AMGX_SOURCE_DIR}
   BUILD_ALWAYS ON
   CMAKE_ARGS -DCMAKE_BUILD_TYPE=RelWithDebInfo
     -DCMAKE_NO_MPI=TRUE
