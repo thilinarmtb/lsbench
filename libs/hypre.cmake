@@ -124,6 +124,9 @@ else()
       -DCMAKE_CXX_VISIBILITY_PRESET=hidden
   )
   add_dependencies(lsbench HYPRE_CPU)
-  target_link_libraries(lsbench PUBLIC)
+  target_link_libraries(lsbench PUBLIC
+                        PUBLIC ${HYPRE_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE${CMAKE_STATIC_LIBRARY_SUFFIX})
+  target_include_directories(lsbench PRIVATE ${HYPRE_INCDIR})
+
 endif()
 
