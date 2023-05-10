@@ -3,6 +3,16 @@
 #if defined(LSBENCH_GINKGO)
 #include <ginkgo/ginkgo.hpp>
 
+template <typename ValueType>
+void print_vector(const std::string &name,
+                  const gko::matrix::Dense<ValueType> *vec) {
+  std::cout << name << " = [" << std::endl;
+  for (int i = 0; i < vec->get_size()[0]; ++i) {
+    std::cout << "    " << vec->at(i, 0) << std::endl;
+  }
+  std::cout << "];" << std::endl;
+}
+
 static std::shared_ptr<gko::matrix::Csr<double, int>>
 csr_init(struct csr *A, const struct lsbench *cb) {
   auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create());
@@ -58,10 +68,26 @@ int ginkgo_bench(double *x, struct csr *A, const double *r,
     solver->apply(dense_r, dense_x);
   }
 
+  // This adds a simple logger that only reports convergence state at the end
+  // of the solver. Specifically it captures the last residual norm, the
+  // final number of iterations, and the converged or not converged status.
+
+  // Some shortcuts
+  using ValueType = double;
+  using RealValueType = gko::remove_complex<ValueType>;
+  using IndexType = int;
+
+  using vec = gko::matrix::Dense<ValueType>;
+  using real_vec = gko::matrix::Dense<RealValueType>;
+  using mtx = gko::matrix::Csr<ValueType, IndexType>;
+  using cg = gko::solver::Cg<ValueType>;
+
+  std::shared_ptr<gko::log::Convergence<ValueType>> convergence_logger =
+      gko::log::Convergence<ValueType>::create();
+  solver->add_logger(convergence_logger);
+
   // Time the solve
-
-  double total_time = 0;
-
+  double time = 0;
   for (unsigned i = 0; i < cb->trials; i++) {
     dense_x->copy_from(dense_x_init);
     exec->synchronize();
@@ -69,14 +95,22 @@ int ginkgo_bench(double *x, struct csr *A, const double *r,
     solver->apply(dense_r, dense_x);
     exec->synchronize();
     t = clock() - t;
-    total_time += static_cast<double>(t);
+    time += static_cast<double>(t);
   }
 
   dense_x_host->copy_from(dense_x);
 
+  std::cout << "Residual norm sqrt(r^T r):\n";
+  write(std::cout, gko::as<vec>(convergence_logger->get_residual_norm()));
+  std::cout << "Number of iterations "
+            << convergence_logger->get_num_iterations() << std::endl;
+  std::cout << "Convergence status " << std::boolalpha
+            << convergence_logger->has_converged() << std::endl;
+
   printf("===matrix,n,nnz,trials,solver,ordering,elapsed===\n");
   printf("%s,%u,%u,%u,%u,%d,%.15lf\n", cb->matrix, m, nnz, cb->trials,
-         cb->solver, cb->ordering, total_time / CLOCKS_PER_SEC);
+         cb->solver, cb->ordering, time / CLOCKS_PER_SEC);
+  fflush(stdout);
   return 0;
 }
 
