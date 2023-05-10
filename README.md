@@ -47,5 +47,5 @@ Once the benchmarks are built, they can be run using the following command:
 Do `driver --help` to see available options (not everything is implemented
 right now).
 ```sh
-driver --solver cholmod --test ./tests/I1_05x05.txt --verbose=1
+driver --solver cholmod --matrix ./tests/I1_05x05.txt --verbose=1
 ```

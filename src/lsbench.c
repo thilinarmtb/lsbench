@@ -65,7 +65,7 @@ static lsbench_precision_t str_to_precision(const char *str) {
 }
 
 static void print_help(int argc, char *argv[]) {
-  printf("Usage: %s [OPTIONS]\n");
+  printf("Usage: %s [OPTIONS]\n","./driver");
   printf("Options:\n");
   printf("  --matrix <FILE>\n");
   printf("  --solver <SOLVER>, Values: cusolver, hypre, amgx, cholmod\n");
