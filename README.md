@@ -38,7 +38,7 @@ cd -
 You can add the `bin` directory to the `PATH` variable to access the binary
 without the full path:
 ```sh
-export PATH=${PATH}/<lsbench-install-dir>/bin
+export PATH=${PATH}:<lsbench-install-dir>/bin
 ```
 
 ## Running the benchmarks

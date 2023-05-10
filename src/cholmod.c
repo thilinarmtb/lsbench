@@ -93,21 +93,36 @@ int cholmod_bench(double *x, struct csr *A, const double *r,
   for (uint i = 0; i < B->nr; i++)
     rx[i] = r[i];
 
-  cholmod_dense *xd = cholmod_solve(CHOLMOD_A, B->L, B->r, &cm);
-
-  if (cb->verbose > 0) {
-    double one[2] = {1, 0}, m1[2] = {-1, 0};
-    cholmod_dense *rd = cholmod_copy_dense(B->r, &cm);
-    cholmod_sdmult(B->A, 0, m1, one, xd, rd, &cm);
-    printf("norm(b-Ax) = %e\n", cholmod_norm_dense(rd, 0, &cm));
-    cholmod_free_dense(&rd, &cm);
+  // Warmup
+  for (unsigned i = 0; i < cb->trials; i++) {
+    cholmod_dense *xd = cholmod_solve(CHOLMOD_A, B->L, B->r, &cm);
+    if (cb->verbose > 0) {
+      double one[2] = {1, 0}, m1[2] = {-1, 0};
+      cholmod_dense *rd = cholmod_copy_dense(B->r, &cm);
+      cholmod_sdmult(B->A, 0, m1, one, xd, rd, &cm);
+      printf("norm(b-Ax) = %e\n", cholmod_norm_dense(rd, 0, &cm));
+      cholmod_free_dense(&rd, &cm);
+    }
+    cholmod_free_dense(&xd, &cm);
   }
 
-  double *xx = (double *)xd->x;
-  for (unsigned i = 0; i < B->nr; i++)
-    x[i] = xx[i];
+  // Time the solve
+  clock_t time = clock();
+  for (unsigned i = 0; i < cb->trials; i++) {
+    cholmod_dense *xd = cholmod_solve(CHOLMOD_A, B->L, B->r, &cm);
+    cholmod_free_dense(&xd, &cm);
+  }
+  time = clock() - time;
 
-  cholmod_free_dense(&xd, &cm), cholmod_finalize(B);
+  unsigned m = A->nrows, nnz = A->offs[m];
+  printf("===matrix,n,nnz,trials,solver,ordering,elapsed===\n");
+  printf("%s,%u,%u,%u,%u,%d,%.15lf\n", cb->matrix, m, nnz, cb->trials,
+         cb->solver, cb->ordering, (double)time / CLOCKS_PER_SEC);
+  fflush(stdout);
+
+  cholmod_finalize(B);
+
+  return 0;
 }
 #else
 int cholmod_init() { return 1; }
