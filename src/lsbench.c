@@ -152,9 +152,16 @@ const char *lsbench_get_matrix_name(struct lsbench *cb) {
 
 void lsbench_bench(struct csr *A, const struct lsbench *cb) {
   unsigned m = A->nrows;
-  double *x = tcalloc(double, 2 * m), *r = x + m;
+  double *r = tcalloc(double, m);
+  double *x = tcalloc(double, m);
+
+  int seed = 27;
+  srand(seed);
   for (unsigned i = 0; i < m; i++)
-    r[i] = i;
+    r[i] = (double) rand() / RAND_MAX;
+  double tmp = l2norm(r,m);
+  for (unsigned i = 0; i < m; i++)
+    r[i] / tmp;
 
   switch (cb->solver) {
   case LSBENCH_SOLVER_CUSOLVER:
@@ -184,8 +191,11 @@ void lsbench_bench(struct csr *A, const struct lsbench *cb) {
       rd[i] = r[i];
     csr_spmv(-1.0, A, x, 1.0, rd);
 
-    printf("b (min/max/amax)  %e %e %e\n",glmin(r,m), glmax(r,m), glamax(r,m));
-    printf("x (min/max/amax)  %e %e %e\n",glmin(x,m), glmax(x,m), glamax(x,m));
+    if (cb->verbose>1) {
+    printf("x   (min/max/amax)  %e %e %e\n",glmin(x,m), glmax(x,m), glamax(x,m));
+    printf("rhs (min/max/amax)  %e %e %e\n",glmin(r,m), glmax(r,m), glamax(r,m));
+    printf("res (min/max/amax)  %e %e %e\n",glmin(rd,m), glmax(rd,m), glamax(rd,m));
+    }
     printf("norm(b-Ax) = %e    norm(b) = %e  norm(x) = %e\n", l2norm(rd,m), l2norm(r,m), l2norm(x,m));
 
     tfree(rd);

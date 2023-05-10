@@ -88,16 +88,35 @@ struct csr *lsbench_matrix_read(const char *fname) {
   // Sanity check.
   assert(crows == nrows);
 
+  csr_symA(A);
+
   tfree(arr), fclose(fp);
   return A;
 }
 
+// A = (A + A.T)/2;
+void csr_symA(struct csr *A) {
+  for (unsigned i=0; i<A->nrows; i++) {
+    for (unsigned j=A->offs[i]; j<A->offs[i+1]; j++) {
+      if (A->cols[j]-A->base <= i) {
+        unsigned irow = A->cols[j]-A->base; 
+        for (unsigned k=A->offs[irow]; k<A->offs[irow+1]; k++) {
+          if (A->cols[k] == i + A->base) {
+             double tmp = 0.5*(A->vals[j] + A->vals[k]);
+             A->vals[j] = tmp;
+             A->vals[k] = tmp;
+          }
+        } 
+       }
+     }
+   }
+}
+
 // y = a A*x + b y
 void csr_spmv(const double a, const struct csr *A, const double* x, const double b, double* y){
-
-  for (int i=0; i<A->nrows; i++) {
+  for (unsigned i=0; i<A->nrows; i++) {
     y[i] = b*y[i];
-    for (int j=A->offs[i]; j<A->offs[i+1]; j++) {
+    for (unsigned j=A->offs[i]; j<A->offs[i+1]; j++) {
       y[i] += a * A->vals[j] * x[A->cols[j]-A->base];
     }
   }
