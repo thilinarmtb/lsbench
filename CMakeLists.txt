@@ -8,6 +8,11 @@ option(ENABLE_AMGX "Enable AmgX support." OFF)
 option(ENABLE_CHOLMOD "Enable Cholmod support." ON)
 option(ENABLE_PARALMOND "Enable parAlmond support." OFF)
 
+option(ENABLE_HYPRE_GPU "Enable HYPRE GPU support" ON)
+option(HYPRE_CUDA_ENABLED "Enable HYPRE CUDA support" ON)
+option(HYPRE_HIP_ENABLED "Enable HYPRE HIP support" OFF)
+option(HYPRE_DPCPP_ENABLED "Enable HYPRE SYCL support" OFF)
+
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")

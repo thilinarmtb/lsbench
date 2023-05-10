@@ -1,0 +1,53 @@
+#!/bin/bash
+set -e -a
+
+#########################################################################
+
+: ${LS_HOME:=/lustre/orion/proj-shared/csc262/ylan/src/lsbench/build/}
+: ${LS_CC:="gcc"}
+: ${LS_CXX:="g++"}
+
+: ${ENABLE_CUSPARSE:=0}
+: ${ENABLE_HYPRE:=1}
+: ${ENABLE_AMGX:=0}
+: ${ENABLE_CHOLMOD:=1}
+: ${ENABLE_PARALMOND:=0}
+
+: ${ENABLE_HYPRE_GPU:=0}
+: ${HYPRE_CUDA_ENABLED:=0}   # NOT tested
+: ${HYPRE_HIP_ENABLED:=0}    # fail (wrong header linking)
+: ${HYPRE_DPCPP_ENABLED:=0}  # NOT tested
+
+
+#########################################################################
+
+: ${NRSCONFIG_NOBUILD:=0}
+
+cmake -S . -B build \
+      -Wno-dev \
+      -Wfatal-errors \
+      -DCMAKE_INSTALL_PREFIX="${LS_HOME}" \
+      -DCMAKE_C_COMPILER="${LS_CC}" \
+      -DCMAKE_CXX_COMPILER="${LS_CXX}" \
+      -DENABLE_CUSPARSE="${ENABLE_CUSPARSE}" -DENABLE_AMGX=${ENABLE_AMGX} \
+      -DENABLE_HYPRE="${ENABLE_HYPRE}" \
+      -DENABLE_CHOLMOD="${ENABLE_CHOLMOD}" \
+      -DENABLE_PARALMOND="${ENABLE_PARALMOND}" \
+      -DENABLE_HYPRE_GPU="${ENABLE_HYPRE_GPU}" \
+      -DHYPRE_CUDA_ENABLED="${HYPRE_CUDA_ENABLED}" \
+      -DHYPRE_HIP_ENABLED="${HYPRE_HIP_ENABLED}" \
+      -DHYPRE_DPCPP_ENABLED="${HYPRE_DPCPP_ENABLED}" \
+      $@
+
+if [ $? -eq 0 ] && [ ${NRSCONFIG_NOBUILD} -eq 0 ]; then
+  cmd="cmake --build ./build --target install -j8" 
+  echo ""        
+  read -p "Hit enter to build code: $cmd"
+  $cmd
+
+  if [ $? -eq 0 ]; then
+    echo ""
+    echo -e "\033[35mHooray! You're all set. The installation is complete.\033[m"
+    echo ""
+  fi
+fi

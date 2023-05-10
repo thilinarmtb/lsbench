@@ -4,6 +4,8 @@
 #include <HYPRE.h>
 #include <HYPRE_parcsr_ls.h>
 #include <_hypre_utilities.h>
+
+#if defined(HYPRE_CUDA_ENABLED)
 #include <cuda_runtime.h>
 
 #define NPARAM 11
@@ -258,7 +260,24 @@ int hypre_finalize() {
 
 #undef chk_rt
 #undef NPARAM
-#else
+#elif defined(HYPRE_HIP_ENABLED) // HIP
+// TODO
+int hypre_init() { return 1; }
+int hypre_finalize() { return 1; }
+int hypre_bench(double *x, struct csr *A, const double *r,
+                const struct lsbench *cb) {
+  return 1;
+}
+#else // HYPRE CPU
+// TODO
+int hypre_init() { return 1; }
+int hypre_finalize() { return 1; }
+int hypre_bench(double *x, struct csr *A, const double *r,
+                const struct lsbench *cb) {
+  return 1;
+} 
+#endif
+#else // LSBENCH_HYPRE
 int hypre_init() { return 1; }
 int hypre_finalize() { return 1; }
 int hypre_bench(double *x, struct csr *A, const double *r,
