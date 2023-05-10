@@ -20,7 +20,8 @@ static void err_handler(int status, const char *file, int line,
          status, message);
 }
 
-static struct cholmod_csr *csr_init(struct csr *A, const struct lsbench *cb) {
+static struct cholmod_csr *csr_init(const struct csr *A,
+                                    const struct lsbench *cb) {
   struct cholmod_csr *B = tcalloc(struct cholmod_csr, 1);
 
   uint nnz = A->offs[A->nrows];
@@ -88,18 +89,23 @@ int cholmod_bench(double *x, struct csr *A, const double *r,
     return 1;
 
   struct cholmod_csr *B = csr_init(A, cb);
+  int nr = A->nrows;
 
-  double *rx = (double *)B->r->x;
-  for (uint i = 0; i < B->nr; i++)
-    rx[i] = r[i];
+  cholmod_dense *cr0 = cholmod_zeros(nr, 1, CHOLMOD_REAL, &cm);
+  double *pr = (double *)B->r->x;
+  double *pr0 = (double *)cr0->x;
+  for (uint i = 0; i < B->nr; i++) {
+    pr[i] = r[i];
+    pr0[i] = r[i];
+  }
 
   cholmod_dense *xd = cholmod_solve(CHOLMOD_A, B->L, B->r, &cm);
 
   if (cb->verbose > 0) {
-    double one[2] = {1, 0}, m1[2] = {-1, 0};
+    double one[2] = {1.0, 0}, m1[2] = {-1.0, 0};
     cholmod_dense *rd = cholmod_copy_dense(B->r, &cm);
     cholmod_sdmult(B->A, 0, m1, one, xd, rd, &cm);
-    printf("norm(b-Ax) = %e\n", cholmod_norm_dense(rd, 0, &cm));
+    printf("norm(b-Ax) = %e\n", cholmod_norm_dense(rd, 2, &cm));
     cholmod_free_dense(&rd, &cm);
   }
 
