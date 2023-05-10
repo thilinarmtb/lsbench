@@ -5,10 +5,7 @@ set(HYPRE_SOURCE_DIR ${CMAKE_BINARY_DIR}/3rd_party/hypre)
 set(HYPRE_LIBDIR ${HYPRE_INSTALL_DIR}/lib)
 set(HYPRE_INCDIR ${HYPRE_INSTALL_DIR}/include)
 
-
-
-if(ENABLE_HYPRE_GPU)
-if(HYPRE_CUDA_ENABLED)
+if (HYPRE_CUDA_ENABLED)
   set(HYPRE_CUDA_SM 70)
   set(HYPRE_ENABLE_DEVICE_MALLOC_ASYNC OFF)
   find_package(CUDAToolkit 11.0 REQUIRED)
@@ -53,7 +50,7 @@ if(HYPRE_CUDA_ENABLED)
     ${HYPRE_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE${CMAKE_STATIC_LIBRARY_SUFFIX}
     CUDA::cudart CUDA::curand CUDA::cublas CUDA::cusparse CUDA::cusolver) 
   target_include_directories(lsbench PRIVATE ${HYPRE_INCDIR})
-elseif(HYPRE_HIP_ENABLED)
+elseif (HYPRE_HIP_ENABLED)
   find_package(HIP REQUIRED)
   find_package(rocrand REQUIRED)
   find_package(hipblas REQUIRED)
@@ -61,7 +58,6 @@ elseif(HYPRE_HIP_ENABLED)
   find_package(rocSOLVER REQUIRED)
   find_package(rocSPARSE REQUIRED)
   find_package(hipSPARSE REQUIRED)
-
 
   ExternalProject_Add(HYPRE_DEVICE
     URL https://github.com/yslan/hypre/archive/refs/tags/v2.27.1.tar.gz
@@ -92,17 +88,13 @@ elseif(HYPRE_HIP_ENABLED)
 
   add_dependencies(lsbench HYPRE_DEVICE)
   target_link_libraries(lsbench PUBLIC
-                        PUBLIC ${HYPRE_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE${CMAKE_STATIC_LIBRARY_SUFFIX}
-                        hip::host roc::rocrand roc::hipblas roc::rocblas roc::rocsolver
-                        roc::rocsparse roc::hipsparse)
+    ${HYPRE_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE${CMAKE_STATIC_LIBRARY_SUFFIX}
+    hip::host roc::rocrand roc::hipblas roc::rocblas roc::rocsolver
+    roc::rocsparse roc::hipsparse)
   target_include_directories(lsbench PRIVATE ${HYPRE_INCDIR})
-
-elseif(HYPRE_DPCPP_ENABLED)
+elseif (HYPRE_DPCPP_ENABLED)
   message(FATAL_ERROR "HYPRE wrapper build does not support DPCPP!")
-endif()
-
 else()
-  #dummy
   ExternalProject_Add(HYPRE_CPU
     URL https://github.com/yslan/hypre/archive/refs/tags/v2.27.1.tar.gz
     SOURCE_DIR ${HYPRE_SOURCE_DIR}
@@ -125,8 +117,6 @@ else()
   )
   add_dependencies(lsbench HYPRE_CPU)
   target_link_libraries(lsbench PUBLIC
-                        PUBLIC ${HYPRE_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE${CMAKE_STATIC_LIBRARY_SUFFIX})
+    ${HYPRE_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE${CMAKE_STATIC_LIBRARY_SUFFIX})
   target_include_directories(lsbench PRIVATE ${HYPRE_INCDIR})
-
 endif()
-

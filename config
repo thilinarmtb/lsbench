@@ -3,17 +3,16 @@ set -e -a
 
 #########################################################################
 
-: ${LS_HOME:=/lustre/orion/proj-shared/csc262/ylan/src/lsbench/build/}
-: ${LS_CC:="gcc"}
-: ${LS_CXX:="g++"}
+: ${LS_HOME:=${HOME}/.local/lsbench/}
+: ${LS_CC:="cc"}
+: ${LS_CXX:="CC"}
 
 : ${ENABLE_CUSPARSE:=0}
 : ${ENABLE_HYPRE:=1}
 : ${ENABLE_AMGX:=0}
-: ${ENABLE_CHOLMOD:=1}
+: ${ENABLE_CHOLMOD:=0}
 : ${ENABLE_PARALMOND:=0}
 
-: ${ENABLE_HYPRE_GPU:=0}
 : ${HYPRE_CUDA_ENABLED:=0}   # NOT tested
 : ${HYPRE_HIP_ENABLED:=0}    # fail (wrong header linking)
 : ${HYPRE_DPCPP_ENABLED:=0}  # NOT tested
@@ -33,7 +32,6 @@ cmake -S . -B build \
       -DENABLE_HYPRE="${ENABLE_HYPRE}" \
       -DENABLE_CHOLMOD="${ENABLE_CHOLMOD}" \
       -DENABLE_PARALMOND="${ENABLE_PARALMOND}" \
-      -DENABLE_HYPRE_GPU="${ENABLE_HYPRE_GPU}" \
       -DHYPRE_CUDA_ENABLED="${HYPRE_CUDA_ENABLED}" \
       -DHYPRE_HIP_ENABLED="${HYPRE_HIP_ENABLED}" \
       -DHYPRE_DPCPP_ENABLED="${HYPRE_DPCPP_ENABLED}" \

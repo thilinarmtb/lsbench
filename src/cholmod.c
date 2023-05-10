@@ -89,11 +89,11 @@ int cholmod_bench(double *x, struct csr *A, const double *r,
     return 1;
 
   struct cholmod_csr *B = csr_init(A, cb);
-  int nr=A->nrows;
+  int nr = A->nrows;
 
   cholmod_dense *cr0 = cholmod_zeros(nr, 1, CHOLMOD_REAL, &cm);
   double *pr = (double *)B->r->x;
-  double *pr0= (double *)cr0->x;
+  double *pr0 = (double *)cr0->x;
   for (uint i = 0; i < B->nr; i++) {
     pr[i] = r[i];
     pr0[i] = r[i];
