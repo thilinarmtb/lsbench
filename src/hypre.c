@@ -101,7 +101,7 @@ int hypre_init() {
   HYPRE_BoomerAMGSetMaxIter(solver, params[2]);
   HYPRE_BoomerAMGSetTol(solver, 0);
 
-//  HYPRE_BoomerAMGSetPrintLevel(solver, 3);
+  //  HYPRE_BoomerAMGSetPrintLevel(solver, 3);
 
   initialized = 1;
   return 0;
@@ -201,7 +201,7 @@ static struct hypre_csr *csr_init(struct csr *A, const struct lsbench *cb) {
 
   if (cb->verbose == 1) {
     HYPRE_BoomerAMGSetPrintLevel(solver, 1);
-  } else if (cb->verbose>1) {
+  } else if (cb->verbose > 1) {
     HYPRE_BoomerAMGSetPrintLevel(solver, 3);
   }
   HYPRE_BoomerAMGSetup(solver, par_A, par_b, par_x);
@@ -244,7 +244,7 @@ int hypre_bench(double *x, struct csr *A, const double *r,
   for (unsigned i = 0; i < cb->trials; i++)
     HYPRE_BoomerAMGSolve(solver, par_A, par_b, par_x);
 
-  if (cb->verbose > 1) {  
+  if (cb->verbose > 1) {
     HYPRE_BoomerAMGSetPrintLevel(solver, 3);
   }
   // Time the solve
@@ -298,7 +298,7 @@ int hypre_bench(double *x, struct csr *A, const double *r,
 int hypre_bench(double *x, struct csr *A, const double *r,
                 const struct lsbench *cb) {
   return 1;
-} 
+}
 */
 static struct hypre_csr *csr_init(struct csr *A, const struct lsbench *cb) {
   struct hypre_csr *B = tcalloc(struct hypre_csr, 1);
@@ -350,7 +350,7 @@ static struct hypre_csr *csr_init(struct csr *A, const struct lsbench *cb) {
 
   if (cb->verbose == 1) {
     HYPRE_BoomerAMGSetPrintLevel(solver, 1);
-  } else if (cb->verbose>1) {
+  } else if (cb->verbose > 1) {
     HYPRE_BoomerAMGSetPrintLevel(solver, 3);
   }
   HYPRE_BoomerAMGSetup(solver, par_A, par_b, par_x);
@@ -382,7 +382,7 @@ int hypre_bench(double *x, struct csr *A, const double *r,
 
   // Warmup
 
-  if (cb->verbose>1) {
+  if (cb->verbose > 1) {
     HYPRE_BoomerAMGSetPrintLevel(solver, 2);
     HYPRE_BoomerAMGSolve(solver, par_A, par_b, par_x);
   }
@@ -398,28 +398,27 @@ int hypre_bench(double *x, struct csr *A, const double *r,
   t = clock() - t;
   // FIXME: Print the solve times.
 
-
   HYPRE_IJVectorGetValues(B->x, nr, NULL, (HYPRE_Real *)x);
 
-/*
-  if (cb->verbose > 0) {
-    HYPRE_IJVector rd;
-    HYPRE_IJVectorUpdateValues(rd, nr, NULL, (HYPRE_Real *)B->b, 1);
+  /*
+    if (cb->verbose > 0) {
+      HYPRE_IJVector rd;
+      HYPRE_IJVectorUpdateValues(rd, nr, NULL, (HYPRE_Real *)B->b, 1);
 
-    HYPRE_Real norm;
-    HYPRE_StructMatrixMatvec((HYPRE_Real) -1.0, B->A, B->x, (HYPRE_Real) 1.0, B->b);
-    HYPRE_IJVectorInnerProd(rd, rd, &norm);
-   
-    printf("norm(b-Ax) = %e\n", sqrt(norm));
-    HYPRE_IJVectorDestroy(rd);
-  }
-*/
-/*
-  for (int i=0;i<nr;i++){
-    printf("dbg x  %d   %e\n",i,x[i]);
-  }
-*/
-//  printf("dbg x  %e %e %e\n",glmin(x,nr), glmax(x,nr), glamax(x,nr));
+      HYPRE_Real norm;
+      HYPRE_StructMatrixMatvec((HYPRE_Real) -1.0, B->A, B->x, (HYPRE_Real) 1.0,
+    B->b); HYPRE_IJVectorInnerProd(rd, rd, &norm);
+
+      printf("norm(b-Ax) = %e\n", sqrt(norm));
+      HYPRE_IJVectorDestroy(rd);
+    }
+  */
+  /*
+    for (int i=0;i<nr;i++){
+      printf("dbg x  %d   %e\n",i,x[i]);
+    }
+  */
+  //  printf("dbg x  %e %e %e\n",glmin(x,nr), glmax(x,nr), glamax(x,nr));
 
   csr_finalize(B);
   return 0;

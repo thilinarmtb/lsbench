@@ -20,7 +20,8 @@ static void err_handler(int status, const char *file, int line,
          status, message);
 }
 
-static struct cholmod_csr *csr_init(const struct csr *A, const struct lsbench *cb) {
+static struct cholmod_csr *csr_init(const struct csr *A,
+                                    const struct lsbench *cb) {
   struct cholmod_csr *B = tcalloc(struct cholmod_csr, 1);
 
   uint nnz = A->offs[A->nrows];

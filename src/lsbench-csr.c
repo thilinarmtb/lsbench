@@ -96,63 +96,62 @@ struct csr *lsbench_matrix_read(const char *fname) {
 
 // A = (A + A.T)/2;
 void csr_symA(struct csr *A) {
-  for (unsigned i=0; i<A->nrows; i++) {
-    for (unsigned j=A->offs[i]; j<A->offs[i+1]; j++) {
-      if (A->cols[j]-A->base <= i) {
-        unsigned irow = A->cols[j]-A->base; 
-        for (unsigned k=A->offs[irow]; k<A->offs[irow+1]; k++) {
+  for (unsigned i = 0; i < A->nrows; i++) {
+    for (unsigned j = A->offs[i]; j < A->offs[i + 1]; j++) {
+      if (A->cols[j] - A->base <= i) {
+        unsigned irow = A->cols[j] - A->base;
+        for (unsigned k = A->offs[irow]; k < A->offs[irow + 1]; k++) {
           if (A->cols[k] == i + A->base) {
-             double tmp = 0.5*(A->vals[j] + A->vals[k]);
-             A->vals[j] = tmp;
-             A->vals[k] = tmp;
+            double tmp = 0.5 * (A->vals[j] + A->vals[k]);
+            A->vals[j] = tmp;
+            A->vals[k] = tmp;
           }
-        } 
-       }
-     }
-   }
-}
-
-// y = a A*x + b y
-void csr_spmv(const double a, const struct csr *A, const double* x, const double b, double* y){
-  for (unsigned i=0; i<A->nrows; i++) {
-    y[i] = b*y[i];
-    for (unsigned j=A->offs[i]; j<A->offs[i+1]; j++) {
-      y[i] += a * A->vals[j] * x[A->cols[j]-A->base];
+        }
+      }
     }
   }
 }
-double l2norm(const double* x, const int n){
-  double norm=0.0;
-  for (int i=0; i<n; i++) {
-    norm+=x[i]*x[i];
+
+// y = a A*x + b y
+void csr_spmv(const double a, const struct csr *A, const double *x,
+              const double b, double *y) {
+  for (unsigned i = 0; i < A->nrows; i++) {
+    y[i] = b * y[i];
+    for (unsigned j = A->offs[i]; j < A->offs[i + 1]; j++) {
+      y[i] += a * A->vals[j] * x[A->cols[j] - A->base];
+    }
   }
-  if (norm>0) norm=sqrt(norm);
+}
+double l2norm(const double *x, const int n) {
+  double norm = 0.0;
+  for (int i = 0; i < n; i++) {
+    norm += x[i] * x[i];
+  }
+  if (norm > 0)
+    norm = sqrt(norm);
   return norm;
 }
 double glmax(const double *x, const int n) {
-  double tmp=-1E10;
-  for (int i=0; i<n; i++) {
+  double tmp = -1E10;
+  for (int i = 0; i < n; i++) {
     tmp = fmax(tmp, x[i]);
   }
   return tmp;
 }
 double glmin(const double *x, const int n) {
-  double tmp=1E10;
-  for (int i=0; i<n; i++) {
+  double tmp = 1E10;
+  for (int i = 0; i < n; i++) {
     tmp = fmin(tmp, x[i]);
   }
   return tmp;
 }
 double glamax(const double *x, const int n) {
-  double tmp=-1E10;
-  for (int i=0; i<n; i++) {
+  double tmp = -1E10;
+  for (int i = 0; i < n; i++) {
     tmp = fmax(tmp, fabs(x[i]));
   }
   return tmp;
 }
-
-
-
 
 void lsbench_matrix_print(const struct csr *A) {
   for (unsigned i = 0; i < A->nrows; i++) {

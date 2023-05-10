@@ -65,7 +65,7 @@ static lsbench_precision_t str_to_precision(const char *str) {
 }
 
 static void print_help(int argc, char *argv[]) {
-  printf("Usage: %s [OPTIONS]\n","./driver");
+  printf("Usage: %s [OPTIONS]\n", "./driver");
   printf("Options:\n");
   printf("  --matrix <FILE>\n");
   printf("  --solver <SOLVER>, Values: cusolver, hypre, amgx, cholmod\n");
@@ -158,8 +158,8 @@ void lsbench_bench(struct csr *A, const struct lsbench *cb) {
   int seed = 27;
   srand(seed);
   for (unsigned i = 0; i < m; i++)
-    r[i] = (double) rand() / RAND_MAX;
-  double tmp = l2norm(r,m);
+    r[i] = (double)rand() / RAND_MAX;
+  double tmp = l2norm(r, m);
   for (unsigned i = 0; i < m; i++)
     r[i] / tmp;
 
@@ -184,24 +184,25 @@ void lsbench_bench(struct csr *A, const struct lsbench *cb) {
     break;
   }
 
-
   if (cb->verbose) {
     double *rd = tcalloc(double, m);
     for (unsigned i = 0; i < m; i++)
       rd[i] = r[i];
     csr_spmv(-1.0, A, x, 1.0, rd);
 
-    if (cb->verbose>1) {
-    printf("x   (min/max/amax)  %e %e %e\n",glmin(x,m), glmax(x,m), glamax(x,m));
-    printf("rhs (min/max/amax)  %e %e %e\n",glmin(r,m), glmax(r,m), glamax(r,m));
-    printf("res (min/max/amax)  %e %e %e\n",glmin(rd,m), glmax(rd,m), glamax(rd,m));
+    if (cb->verbose > 1) {
+      printf("x   (min/max/amax)  %e %e %e\n", glmin(x, m), glmax(x, m),
+             glamax(x, m));
+      printf("rhs (min/max/amax)  %e %e %e\n", glmin(r, m), glmax(r, m),
+             glamax(r, m));
+      printf("res (min/max/amax)  %e %e %e\n", glmin(rd, m), glmax(rd, m),
+             glamax(rd, m));
     }
-    printf("norm(b-Ax) = %e    norm(b) = %e  norm(x) = %e\n", l2norm(rd,m), l2norm(r,m), l2norm(x,m));
+    printf("norm(b-Ax) = %e    norm(b) = %e  norm(x) = %e\n", l2norm(rd, m),
+           l2norm(r, m), l2norm(x, m));
 
     tfree(rd);
   }
-
-
 
   tfree(x);
 }
