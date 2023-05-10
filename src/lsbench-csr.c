@@ -1,6 +1,7 @@
 #include "lsbench-impl.h"
 #include <assert.h>
 #include <err.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -90,6 +91,49 @@ struct csr *lsbench_matrix_read(const char *fname) {
   tfree(arr), fclose(fp);
   return A;
 }
+
+// y = a A*x + b y
+void csr_spmv(const double a, const struct csr *A, const double* x, const double b, double* y){
+
+  for (int i=0; i<A->nrows; i++) {
+    y[i] = b*y[i];
+    for (int j=A->offs[i]; j<A->offs[i+1]; j++) {
+      y[i] += a * A->vals[j] * x[A->cols[j]-A->base];
+    }
+  }
+}
+double l2norm(const double* x, const int n){
+  double norm=0.0;
+  for (int i=0; i<n; i++) {
+    norm+=x[i]*x[i];
+  }
+  if (norm>0) norm=sqrt(norm);
+  return norm;
+}
+double glmax(const double *x, const int n) {
+  double tmp=-1E10;
+  for (int i=0; i<n; i++) {
+    tmp = fmax(tmp, x[i]);
+  }
+  return tmp;
+}
+double glmin(const double *x, const int n) {
+  double tmp=1E10;
+  for (int i=0; i<n; i++) {
+    tmp = fmin(tmp, x[i]);
+  }
+  return tmp;
+}
+double glamax(const double *x, const int n) {
+  double tmp=-1E10;
+  for (int i=0; i<n; i++) {
+    tmp = fmax(tmp, fabs(x[i]));
+  }
+  return tmp;
+}
+
+
+
 
 void lsbench_matrix_print(const struct csr *A) {
   for (unsigned i = 0; i < A->nrows; i++) {

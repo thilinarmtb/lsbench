@@ -29,6 +29,12 @@ typedef enum {
 
 struct csr;
 struct csr *lsbench_matrix_read(const char *fname);
+void csr_spmv(const double a, const struct csr *A, const double* x, const double b, double* y);
+double l2norm(const double* x, const int n);
+double glmax(const double *x, const int n);
+double glmin(const double *x, const int n);
+double glamax(const double *x, const int n);
+
 void lsbench_matrix_print(const struct csr *A);
 void lsbench_matrix_free(struct csr *A);
 
