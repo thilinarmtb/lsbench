@@ -1,17 +1,11 @@
 #include "lsbench-impl.h"
+#include <err.h>
 
 #if defined(LSBENCH_CHOLMOD)
 #include <cholmod.h>
 
 static int initialized = 0;
 static cholmod_common cm;
-
-struct cholmod_csr {
-  unsigned nr;
-  cholmod_sparse *A;
-  cholmod_factor *L;
-  cholmod_dense *r;
-};
 
 // Callback function to call if an error occurs.
 static void err_handler(int status, const char *file, int line,
@@ -20,65 +14,142 @@ static void err_handler(int status, const char *file, int line,
          status, message);
 }
 
-static struct cholmod_csr *csr_init(struct csr *A, const struct lsbench *cb) {
-  struct cholmod_csr *B = tcalloc(struct cholmod_csr, 1);
+struct cholmod_csr {
+  unsigned nr;
+  cholmod_sparse *A;
+  cholmod_factor *L;
+  cholmod_dense *r;
+};
 
-  uint nnz = A->offs[A->nrows];
-  cholmod_triplet *T =
-      cholmod_allocate_triplet(A->nrows, A->nrows, nnz, -1, CHOLMOD_REAL, &cm);
-  int32_t *Ti = (int32_t *)T->i, *Tj = (int32_t *)T->j;
+#define TOKEN_PASTE_(a, b) a##b
+#define TOKEN_PASTE(a, b) TOKEN_PASTE_(a, b)
+#define SUFFIXED_NAME(name) TOKEN_PASTE(name, SUFFIX)
 
-  uint z = 0;
-  double *Tx = (double *)T->x;
-  for (uint i = 0; i < A->nrows; i++) {
-    uint j;
-    for (j = A->offs[i]; A->cols[j] - A->base < i; j++)
-      ;
-    for (uint je = A->offs[i + 1]; j < je; j++)
-      Ti[z] = i, Tj[z] = A->cols[j] - A->base, Tx[z] = A->vals[j], z++;
-  }
-  T->nnz = z;
+#define idx_t int64_t
+#define SUFFIX _int64
+#define allocate_triplet cholmod_l_allocate_triplet
+#define triplet_to_sparse cholmod_l_triplet_to_sparse
+#define free_triplet cholmod_l_free_triplet
+#define analyze cholmod_l_analyze
+#define factorize cholmod_l_factorize
+#define zeros cholmod_l_zeros
+#define solve cholmod_l_solve
+#define free_dense cholmod_l_free_dense
+#define copy_dense cholmod_l_copy_dense
+#define norm_dense cholmod_l_norm_dense
+#define free_sparse cholmod_l_free_sparse
+#define free_factor cholmod_l_free_factor
+#define gpu_stats cholmod_l_gpu_stats
+#define change_factor cholmod_l_change_factor
+#define sdmult cholmod_l_sdmult
 
-  // Convert triplet to CSC matrix.
-  B->A = cholmod_triplet_to_sparse(T, T->nnz, &cm);
-  cholmod_free_triplet(&T, &cm);
+#include "cholmod-impl.h"
 
-  // Factorize.
-  B->L = cholmod_analyze(B->A, &cm);
-  cholmod_factorize(B->A, B->L, &cm);
+#undef idx_t
+#undef SUFFIX
+#undef allocate_triplet
+#undef triplet_to_sparse
+#undef free_triplet
+#undef analyze
+#undef factorize
+#undef zeros
+#undef solve
+#undef free_dense
+#undef copy_dense
+#undef norm_dense
+#undef free_sparse
+#undef free_factor
+#undef gpu_stats
+#undef change_factor
+#undef sdmult
 
-  B->r = cholmod_zeros(A->nrows, 1, CHOLMOD_REAL, &cm);
-  B->nr = A->nrows;
+#define idx_t int32_t
+#define SUFFIX _int32
+#define allocate_triplet cholmod_allocate_triplet
+#define triplet_to_sparse cholmod_triplet_to_sparse
+#define free_triplet cholmod_free_triplet
+#define analyze cholmod_analyze
+#define factorize cholmod_factorize
+#define zeros cholmod_zeros
+#define solve cholmod_solve
+#define free_dense cholmod_free_dense
+#define copy_dense cholmod_copy_dense
+#define norm_dense cholmod_norm_dense
+#define free_sparse cholmod_free_sparse
+#define free_factor cholmod_free_factor
+#define gpu_stats cholmod_gpu_stats
+#define change_factor cholmod_change_factor
+#define sdmult cholmod_sdmult
 
-  return B;
-}
+#include "cholmod-impl.h"
 
-static void csr_finalize(struct cholmod_csr *A) {
-  if (A) {
-    cholmod_free_sparse(&A->A, &cm);
-    cholmod_free_factor(&A->L, &cm);
-    cholmod_free_dense(&A->r, &cm);
-  }
-  tfree(A);
-}
+#undef idx_t
+#undef SUFFIX
+#undef allocate_triplet
+#undef triplet_to_sparse
+#undef free_triplet
+#undef analyze
+#undef factorize
+#undef zeros
+#undef solve
+#undef free_dense
+#undef copy_dense
+#undef norm_dense
+#undef free_sparse
+#undef free_factor
+#undef gpu_stats
+#undef change_factor
+#undef sdmult
+
+#undef SUFFIXED_NAME
+#undef TOKEN_PASTE
+#undef TOKEN_PASTE_
 
 int cholmod_init() {
   if (initialized)
     return 1;
 
-  cholmod_start(&cm);
-  cm.itype = CHOLMOD_INT;
+  int itype = CHOLMOD_INT;
+  switch (itype) {
+  case CHOLMOD_INT:
+    cholmod_start(&cm);
+    break;
+  case CHOLMOD_LONG:
+    cholmod_l_start(&cm);
+    break;
+  default:
+    errx(EXIT_FAILURE, "Invalid precision for index type !");
+    break;
+  }
+
   cm.dtype = CHOLMOD_DOUBLE;
+  cm.itype = itype;
+  cm.useGPU = (cm.itype == CHOLMOD_LONG ? 1 : 0);
   cm.error_handler = err_handler;
+
   initialized = 1;
+
   return 0;
 }
 
 int cholmod_finalize() {
   if (!initialized)
     return 1;
-  cholmod_finish(&cm);
+
+  switch (cm.itype) {
+  case CHOLMOD_INT:
+    cholmod_finish(&cm);
+    break;
+  case CHOLMOD_LONG:
+    cholmod_l_finish(&cm);
+    break;
+  default:
+    errx(EXIT_FAILURE, "Invalid precision for index type !");
+    break;
+  }
+
   initialized = 0;
+
   return 0;
 }
 
@@ -87,42 +158,17 @@ int cholmod_bench(double *x, struct csr *A, const double *r,
   if (!initialized)
     return 1;
 
-  struct cholmod_csr *B = csr_init(A, cb);
-
-  double *rx = (double *)B->r->x;
-  for (uint i = 0; i < B->nr; i++)
-    rx[i] = r[i];
-
-  // Warmup
-  for (unsigned i = 0; i < cb->trials; i++) {
-    cholmod_dense *xd = cholmod_solve(CHOLMOD_A, B->L, B->r, &cm);
-    if (cb->verbose > 0) {
-      double one[2] = {1, 0}, m1[2] = {-1, 0};
-      cholmod_dense *rd = cholmod_copy_dense(B->r, &cm);
-      cholmod_sdmult(B->A, 0, m1, one, xd, rd, &cm);
-      printf("norm(b-Ax) = %e\n", cholmod_norm_dense(rd, 0, &cm));
-      cholmod_free_dense(&rd, &cm);
-    }
-    cholmod_free_dense(&xd, &cm);
+  switch (cm.itype) {
+  case CHOLMOD_INT:
+    bench_int32(x, A, r, cb);
+    break;
+  case CHOLMOD_LONG:
+    bench_int64(x, A, r, cb);
+    break;
+  default:
+    errx(EXIT_FAILURE, "Invalid precision for index type !");
+    break;
   }
-
-  // Time the solve
-  clock_t time = clock();
-  for (unsigned i = 0; i < cb->trials; i++) {
-    cholmod_dense *xd = cholmod_solve(CHOLMOD_A, B->L, B->r, &cm);
-    cholmod_free_dense(&xd, &cm);
-  }
-  time = clock() - time;
-
-  unsigned m = A->nrows, nnz = A->offs[m];
-  printf("===matrix,n,nnz,trials,solver,ordering,elapsed===\n");
-  printf("%s,%u,%u,%u,%u,%d,%.15lf\n", cb->matrix, m, nnz, cb->trials,
-         cb->solver, cb->ordering, (double)time / CLOCKS_PER_SEC);
-  fflush(stdout);
-
-  cholmod_finalize(B);
-
-  return 0;
 }
 #else
 int cholmod_init() { return 1; }
