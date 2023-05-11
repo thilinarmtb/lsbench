@@ -7,7 +7,7 @@ option(ENABLE_HYPRE "Enable Hypre support." OFF)
 option(ENABLE_AMGX "Enable AmgX support." OFF)
 option(ENABLE_CHOLMOD "Enable Cholmod support." ON)
 option(ENABLE_PARALMOND "Enable parAlmond support." OFF)
-option(ENABLE_GINKGO "Enable Ginkgo support." ON)
+option(ENABLE_GINKGO "Enable Ginkgo support." OFF)
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
@@ -16,7 +16,7 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib64")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
-# set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCES src/lsbench.c src/lsbench-csr.c src/cusparse.c src/hypre.c
