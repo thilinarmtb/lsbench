@@ -17,6 +17,18 @@ ExternalProject_Add(ss_config
   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 )
 
+ExternalProject_Add(ss_gpurt
+  DOWNLOAD_COMMAND ""
+  SOURCE_DIR "${CMAKE_BINARY_DIR}/SuiteSparse"
+  SOURCE_SUBDIR SuiteSparse_GPURuntime
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${SUITESPARSE_INSTALL_DIR}
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
+  -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+  -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+)
+
 ExternalProject_Add(ss_colamd
   DOWNLOAD_COMMAND ""
   SOURCE_DIR ${SUITESPARSE_SOURCE_DIR}
@@ -51,16 +63,20 @@ ExternalProject_Add(ss_cholmod
   -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+  -DENABLE_CUDA=ON
 )
 
-add_dependencies(ss_colamd ss_config)
+add_dependencies(ss_gpurt ss_config)
+add_dependencies(ss_colamd ss_gpurt ss_config)
 add_dependencies(ss_amd ss_config)
 add_dependencies(ss_cholmod ss_amd ss_colamd)
 
 add_dependencies(lsbench ss_cholmod)
-target_link_libraries(lsbench PRIVATE 
+target_link_libraries(lsbench PRIVATE
   ${SUITESPARSE_LIBDIR}/${CMAKE_SHARED_LIBRARY_PREFIX}cholmod${CMAKE_SHARED_LIBRARY_SUFFIX}
+  ${SUITESPARSE_LIBDIR}/${CMAKE_SHARED_LIBRARY_PREFIX}cholmod_cuda${CMAKE_SHARED_LIBRARY_SUFFIX}
   ${SUITESPARSE_LIBDIR}/${CMAKE_SHARED_LIBRARY_PREFIX}colamd${CMAKE_SHARED_LIBRARY_SUFFIX}
   ${SUITESPARSE_LIBDIR}/${CMAKE_SHARED_LIBRARY_PREFIX}amd${CMAKE_SHARED_LIBRARY_SUFFIX}
+  ${SUITESPARSE_LIBDIR}/${CMAKE_SHARED_LIBRARY_PREFIX}suitesparse_gpuruntime${CMAKE_SHARED_LIBRARY_SUFFIX}
   ${SUITESPARSE_LIBDIR}/${CMAKE_SHARED_LIBRARY_PREFIX}suitesparseconfig${CMAKE_SHARED_LIBRARY_SUFFIX})
 target_include_directories(lsbench PRIVATE ${SUITESPARSE_INCDIR})
