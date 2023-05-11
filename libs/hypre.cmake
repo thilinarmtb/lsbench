@@ -16,7 +16,7 @@ if (HYPRE_CUDA_ENABLED)
     set(HYPRE_ENABLE_DEVICE_MALLOC_ASYNC ON)
   endif()
   
-  ExternalProject_Add(HYPRE_DEVICE
+  ExternalProject_Add(HYPRE_DEVICE_CUDA
     URL https://github.com/yslan/hypre/archive/refs/tags/v2.27.1.tar.gz
     SOURCE_DIR ${HYPRE_SOURCE_DIR}
     SOURCE_SUBDIR "src"
@@ -45,7 +45,7 @@ if (HYPRE_CUDA_ENABLED)
       -DCMAKE_CUDA_HOST_COMPILER=${CMAKE_CXX_COMPILER}
   )
   
-  add_dependencies(lsbench HYPRE_DEVICE)
+  add_dependencies(lsbench HYPRE_DEVICE_CUDA)
   target_link_libraries(lsbench PUBLIC
     ${HYPRE_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE${CMAKE_STATIC_LIBRARY_SUFFIX}
     CUDA::cudart CUDA::curand CUDA::cublas CUDA::cusparse CUDA::cusolver) 
@@ -59,7 +59,7 @@ elseif (HYPRE_HIP_ENABLED)
   find_package(rocSPARSE REQUIRED)
   find_package(hipSPARSE REQUIRED)
 
-  ExternalProject_Add(HYPRE_DEVICE
+  ExternalProject_Add(HYPRE_DEVICE_HIP
     URL https://github.com/yslan/hypre/archive/refs/tags/v2.27.1.tar.gz
     SOURCE_DIR ${HYPRE_SOURCE_DIR}
     SOURCE_SUBDIR "src"
@@ -71,14 +71,10 @@ elseif (HYPRE_HIP_ENABLED)
       -DHYPRE_WITH_HIP=ON
       -DHYPRE_WITH_GPU_AWARE_MPI=OFF
       # -DHYPRE_ENABLE_ROCSPARSE=ON
-      -DHYPRE_ENABLE_DEVICE_MALLOC_ASYNC=${HYPRE_ENABLE_DEVICE_MALLOC_ASYNC}
+      -DHYPRE_ENABLE_DEVICE_MALLOC_ASYNC=0
       -DHYPRE_BUILD_TYPE=RelWithDebInfo
-      -DHYPRE_INSTALL_PREFIX=${HYPRE_INSTALL_DIR}
-      -DCMAKE_INSTALL_LIBDIR=${HYPRE_LIBDIR}
-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_C_FLAGS_RELWITHDEBINFO=${CMAKE_C_FLAGS_RELWITHDEBINFO}
-      -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${CMAKE_CXX_FLAGS_RELWITHDEBINFO}
+      -DCMAKE_C_COMPILER=/opt/rocm-5.3.0/bin/hipcc
+      -DCMAKE_CXX_COMPILER=/opt/rocm-5.3.0/bin/hipcc
       -DCMAKE_POSITION_INDEPENDENT_CODE=ON
       -DCMAKE_C_VISIBILITY_PRESET=hidden
       -DCMAKE_CXX_VISIBILITY_PRESET=hidden
@@ -86,7 +82,7 @@ elseif (HYPRE_HIP_ENABLED)
       # -DCMAKE_HIP_HOST_COMPILER=${CMAKE_CXX_COMPILER}
   )
 
-  add_dependencies(lsbench HYPRE_DEVICE)
+  add_dependencies(lsbench HYPRE_DEVICE_HIP)
   target_link_libraries(lsbench PUBLIC
     ${HYPRE_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}HYPRE${CMAKE_STATIC_LIBRARY_SUFFIX}
     hip::host roc::rocrand roc::hipblas roc::rocblas roc::rocsolver

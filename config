@@ -14,7 +14,7 @@ set -e -a
 : ${ENABLE_PARALMOND:=0}
 
 : ${HYPRE_CUDA_ENABLED:=0}   # NOT tested
-: ${HYPRE_HIP_ENABLED:=0}    # fail (wrong header linking)
+: ${HYPRE_HIP_ENABLED:=1}    # fail (wrong header linking)
 : ${HYPRE_DPCPP_ENABLED:=0}  # NOT tested
 
 
@@ -28,7 +28,8 @@ cmake -S . -B build \
       -DCMAKE_INSTALL_PREFIX="${LS_HOME}" \
       -DCMAKE_C_COMPILER="${LS_CC}" \
       -DCMAKE_CXX_COMPILER="${LS_CXX}" \
-      -DENABLE_CUSPARSE="${ENABLE_CUSPARSE}" -DENABLE_AMGX=${ENABLE_AMGX} \
+      -DENABLE_CUSPARSE="${ENABLE_CUSPARSE}" \
+      -DENABLE_AMGX=${ENABLE_AMGX} \
       -DENABLE_HYPRE="${ENABLE_HYPRE}" \
       -DENABLE_CHOLMOD="${ENABLE_CHOLMOD}" \
       -DENABLE_PARALMOND="${ENABLE_PARALMOND}" \
@@ -38,8 +39,8 @@ cmake -S . -B build \
       $@
 
 if [ $? -eq 0 ] && [ ${NRSCONFIG_NOBUILD} -eq 0 ]; then
-  cmd="cmake --build ./build --target install -j8" 
-  echo ""        
+  cmd="cmake --build ./build --target install -j10"
+  echo ""
   read -p "Hit enter to build code: $cmd"
   $cmd
 
